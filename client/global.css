@@ -1,5 +1,5 @@
 /** @import must precede all other statements */
-@import url("https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap");
+@import url("https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap");
 
 @tailwind base;
 @tailwind components;
@@ -7,94 +7,142 @@
 
 @layer base {
   /**
-   * Tailwind CSS theme
-   * tailwind.config.ts expects the following color variables to be expressed as HSL values.
-   * A different format will require also updating the theme in tailwind.config.ts.
-  */
+   * EcoWardrobe Design System
+   * Color variables in HSL format for Tailwind CSS integration
+   * Supports both light and dark modes with custom eco-conscious palette
+   */
   :root {
+    /* Base colors - Light mode */
     --background: 0 0% 100%;
-    --foreground: 222.2 84% 4.9%;
+    --foreground: 10 14% 18%;
 
     --card: 0 0% 100%;
-    --card-foreground: 222.2 84% 4.9%;
+    --card-foreground: 10 14% 18%;
 
     --popover: 0 0% 100%;
-    --popover-foreground: 222.2 84% 4.9%;
+    --popover-foreground: 10 14% 18%;
 
-    --primary: 222.2 47.4% 11.2%;
-    --primary-foreground: 210 40% 98%;
+    /* Primary: Deep forest green - eco-friendly main color */
+    --primary: 150 55% 32%;
+    --primary-foreground: 0 0% 100%;
 
-    --secondary: 210 40% 96.1%;
-    --secondary-foreground: 222.2 47.4% 11.2%;
+    /* Secondary: Soft earth tone */
+    --secondary: 35 85% 88%;
+    --secondary-foreground: 10 14% 18%;
 
-    --muted: 210 40% 96.1%;
-    --muted-foreground: 215.4 16.3% 46.9%;
+    /* Accents and supporting colors */
+    --muted: 0 0% 92%;
+    --muted-foreground: 10 9% 45%;
 
-    --accent: 210 40% 96.1%;
-    --accent-foreground: 222.2 47.4% 11.2%;
+    --accent: 150 60% 50%;
+    --accent-foreground: 0 0% 100%;
 
     --destructive: 0 84.2% 60.2%;
     --destructive-foreground: 210 40% 98%;
 
-    --border: 214.3 31.8% 91.4%;
-    --input: 214.3 31.8% 91.4%;
-    --ring: 222.2 84% 4.9%;
+    --border: 0 0% 92%;
+    --input: 0 0% 96%;
+    --ring: 150 55% 32%;
 
-    --radius: 0.5rem;
+    --radius: 0.75rem;
 
+    /* Eco palette - Green shades */
+    --eco-50: 150 80% 96%;
+    --eco-100: 150 75% 92%;
+    --eco-200: 150 70% 85%;
+    --eco-300: 150 65% 75%;
+    --eco-400: 150 60% 60%;
+    --eco-500: 150 55% 50%;
+    --eco-600: 150 60% 40%;
+    --eco-700: 150 65% 30%;
+    --eco-800: 150 70% 22%;
+    --eco-900: 150 75% 15%;
+
+    /* Nature colors */
+    --nature: 145 39% 45%;
+    --nature-light: 145 50% 72%;
+    --nature-dark: 145 45% 28%;
+
+    /* Impact tracking colors */
+    --impact-positive: 142 71% 45%;
+    --impact-warning: 38 92% 50%;
+    --impact-neutral: 210 8% 58%;
+
+    /* Sidebar styling */
     --sidebar-background: 0 0% 98%;
-
-    --sidebar-foreground: 240 5.3% 26.1%;
-
-    --sidebar-primary: 240 5.9% 10%;
-
-    --sidebar-primary-foreground: 0 0% 98%;
-
-    --sidebar-accent: 240 4.8% 95.9%;
-
-    --sidebar-accent-foreground: 240 5.9% 10%;
-
-    --sidebar-border: 220 13% 91%;
-
-    --sidebar-ring: 217.2 91.2% 59.8%;
+    --sidebar-foreground: 10 14% 28%;
+    --sidebar-primary: 150 55% 32%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 150 60% 50%;
+    --sidebar-accent-foreground: 0 0% 100%;
+    --sidebar-border: 0 0% 88%;
+    --sidebar-ring: 150 55% 32%;
   }
 
   .dark {
-    --background: 222.2 84% 4.9%;
-    --foreground: 210 40% 98%;
+    /* Base colors - Dark mode */
+    --background: 10 14% 12%;
+    --foreground: 0 0% 95%;
 
-    --card: 222.2 84% 4.9%;
-    --card-foreground: 210 40% 98%;
+    --card: 10 14% 18%;
+    --card-foreground: 0 0% 95%;
 
-    --popover: 222.2 84% 4.9%;
-    --popover-foreground: 210 40% 98%;
+    --popover: 10 14% 16%;
+    --popover-foreground: 0 0% 95%;
 
-    --primary: 210 40% 98%;
-    --primary-foreground: 222.2 47.4% 11.2%;
+    /* Primary */
+    --primary: 150 55% 55%;
+    --primary-foreground: 10 14% 12%;
 
-    --secondary: 217.2 32.6% 17.5%;
-    --secondary-foreground: 210 40% 98%;
+    /* Secondary */
+    --secondary: 35 75% 22%;
+    --secondary-foreground: 0 0% 95%;
 
-    --muted: 217.2 32.6% 17.5%;
-    --muted-foreground: 215 20.2% 65.1%;
+    /* Accents */
+    --muted: 10 14% 28%;
+    --muted-foreground: 0 0% 75%;
 
-    --accent: 217.2 32.6% 17.5%;
-    --accent-foreground: 210 40% 98%;
+    --accent: 150 60% 60%;
+    --accent-foreground: 10 14% 12%;
 
-    --destructive: 0 62.8% 30.6%;
-    --destructive-foreground: 210 40% 98%;
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 0 0% 100%;
 
-    --border: 217.2 32.6% 17.5%;
-    --input: 217.2 32.6% 17.5%;
-    --ring: 212.7 26.8% 83.9%;
-    --sidebar-background: 240 5.9% 10%;
-    --sidebar-foreground: 240 4.8% 95.9%;
-    --sidebar-primary: 224.3 76.3% 48%;
-    --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 240 3.7% 15.9%;
-    --sidebar-accent-foreground: 240 4.8% 95.9%;
-    --sidebar-border: 240 3.7% 15.9%;
-    --sidebar-ring: 217.2 91.2% 59.8%;
+    --border: 10 14% 25%;
+    --input: 10 14% 22%;
+    --ring: 150 55% 55%;
+
+    /* Eco palette - Dark mode */
+    --eco-50: 150 80% 95%;
+    --eco-100: 150 75% 90%;
+    --eco-200: 150 70% 80%;
+    --eco-300: 150 65% 70%;
+    --eco-400: 150 60% 55%;
+    --eco-500: 150 55% 50%;
+    --eco-600: 150 60% 45%;
+    --eco-700: 150 65% 35%;
+    --eco-800: 150 70% 25%;
+    --eco-900: 150 75% 18%;
+
+    /* Nature colors */
+    --nature: 145 39% 65%;
+    --nature-light: 145 50% 75%;
+    --nature-dark: 145 45% 42%;
+
+    /* Impact tracking colors */
+    --impact-positive: 142 71% 55%;
+    --impact-warning: 38 92% 55%;
+    --impact-neutral: 210 8% 68%;
+
+    /* Sidebar styling */
+    --sidebar-background: 10 14% 14%;
+    --sidebar-foreground: 0 0% 90%;
+    --sidebar-primary: 150 55% 55%;
+    --sidebar-primary-foreground: 10 14% 12%;
+    --sidebar-accent: 150 60% 60%;
+    --sidebar-accent-foreground: 10 14% 12%;
+    --sidebar-border: 10 14% 25%;
+    --sidebar-ring: 150 55% 55%;
   }
 }
 
@@ -105,6 +153,23 @@
 
   body {
     @apply bg-background text-foreground;
+    font-feature-settings: "rlig" 1 "calt" 1;
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    @apply font-semibold;
+  }
+
+  h1 {
+    @apply text-4xl md:text-5xl;
+  }
+
+  h2 {
+    @apply text-3xl md:text-4xl;
+  }
+
+  h3 {
+    @apply text-xl md:text-2xl;
   }
 
   :where(p, span, li, h1, h2, h3, h4, h5, h6, a, button, label, td, th) {
@@ -116,5 +181,27 @@
   code {
     overflow-x: auto;
     white-space: pre;
+  }
+}
+
+@layer components {
+  .btn-primary {
+    @apply px-6 py-3 bg-primary text-primary-foreground rounded-lg font-semibold hover:bg-eco-700 active:bg-eco-800 transition-colors duration-200;
+  }
+
+  .btn-secondary {
+    @apply px-6 py-3 bg-secondary text-secondary-foreground rounded-lg font-semibold hover:bg-eco-100 active:bg-eco-200 transition-colors duration-200;
+  }
+
+  .card-base {
+    @apply bg-card text-card-foreground rounded-lg border border-border shadow-sm hover:shadow-md transition-shadow duration-200;
+  }
+
+  .fade-in-animation {
+    animation: fadeIn 0.6s ease-out;
+  }
+
+  .slide-up-animation {
+    animation: slideUp 0.6s ease-out;
   }
 }

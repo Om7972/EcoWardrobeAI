@@ -57,6 +57,28 @@ export default {
           border: "hsl(var(--sidebar-border))",
           ring: "hsl(var(--sidebar-ring))",
         },
+        eco: {
+          50: "hsl(var(--eco-50))",
+          100: "hsl(var(--eco-100))",
+          200: "hsl(var(--eco-200))",
+          300: "hsl(var(--eco-300))",
+          400: "hsl(var(--eco-400))",
+          500: "hsl(var(--eco-500))",
+          600: "hsl(var(--eco-600))",
+          700: "hsl(var(--eco-700))",
+          800: "hsl(var(--eco-800))",
+          900: "hsl(var(--eco-900))",
+        },
+        nature: {
+          DEFAULT: "hsl(var(--nature))",
+          light: "hsl(var(--nature-light))",
+          dark: "hsl(var(--nature-dark))",
+        },
+        impact: {
+          positive: "hsl(var(--impact-positive))",
+          warning: "hsl(var(--impact-warning))",
+          neutral: "hsl(var(--impact-neutral))",
+        },
       },
       borderRadius: {
         lg: "var(--radius)",
@@ -80,10 +102,50 @@ export default {
             height: "0",
           },
         },
+        "fade-in": {
+          from: {
+            opacity: "0",
+          },
+          to: {
+            opacity: "1",
+          },
+        },
+        "slide-up": {
+          from: {
+            transform: "translateY(10px)",
+            opacity: "0",
+          },
+          to: {
+            transform: "translateY(0)",
+            opacity: "1",
+          },
+        },
+        "scale-in": {
+          from: {
+            transform: "scale(0.95)",
+            opacity: "0",
+          },
+          to: {
+            transform: "scale(1)",
+            opacity: "1",
+          },
+        },
+        float: {
+          "0%, 100%": {
+            transform: "translateY(0)",
+          },
+          "50%": {
+            transform: "translateY(-10px)",
+          },
+        },
       },
       animation: {
         "accordion-down": "accordion-down 0.2s ease-out",
         "accordion-up": "accordion-up 0.2s ease-out",
+        "fade-in": "fade-in 0.3s ease-out",
+        "slide-up": "slide-up 0.4s ease-out",
+        "scale-in": "scale-in 0.3s ease-out",
+        float: "float 3s ease-in-out infinite",
       },
     },
   },

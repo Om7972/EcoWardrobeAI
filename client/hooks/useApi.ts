@@ -330,3 +330,68 @@ export function useRateMarketplaceListing() {
     },
   });
 }
+
+// AI Style Coach API hooks
+export function useGetDailySuggestions(date: "today" | "tomorrow" = "today") {
+  return useQuery({
+    queryKey: ["daily-suggestions", date],
+    queryFn: async () => {
+      const res = await fetch(`${API_BASE}/style-coach/daily-suggestions?date=${date}`);
+      if (!res.ok) throw new Error("Failed to fetch suggestions");
+      return res.json();
+    },
+  });
+}
+
+export function useGetOutfitAdvice() {
+  return useMutation({
+    mutationFn: async (data: {
+      colorPalette: string[];
+      stylePreferences: string[];
+      occasion: string;
+      bodyType?: string;
+    }) => {
+      const res = await fetch(`${API_BASE}/style-coach/outfit-advice`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(data),
+      });
+      if (!res.ok) throw new Error("Failed to get outfit advice");
+      return res.json();
+    },
+  });
+}
+
+export function useGetWeeklyInsights() {
+  return useQuery({
+    queryKey: ["weekly-insights"],
+    queryFn: async () => {
+      const res = await fetch(`${API_BASE}/style-coach/weekly-insights`);
+      if (!res.ok) throw new Error("Failed to fetch insights");
+      return res.json();
+    },
+  });
+}
+
+export function useGetSeasonalGuidance(season: "spring" | "summer" | "fall" | "winter") {
+  return useQuery({
+    queryKey: ["seasonal-guidance", season],
+    queryFn: async () => {
+      const res = await fetch(`${API_BASE}/style-coach/seasonal/${season}`);
+      if (!res.ok) throw new Error("Failed to fetch guidance");
+      return res.json();
+    },
+    enabled: !!season,
+  });
+}
+
+export function useGetStyleTips() {
+  return useQuery({
+    queryKey: ["style-tips"],
+    queryFn: async () => {
+      const res = await fetch(`${API_BASE}/style-coach/tips`);
+      if (!res.ok) throw new Error("Failed to fetch tips");
+      return res.json();
+    },
+  });
+}

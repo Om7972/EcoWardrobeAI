@@ -12,7 +12,7 @@ import {
   Heart,
   Star,
 } from "lucide-react";
-import { useUploadClothingItem, useGetUserCloset, useDeleteClothingItem, useGetEcoScore } from "@/hooks/useApi";
+import { useUploadClothingItem, useGetUserCloset, useDeleteClothingItem } from "@/hooks/useApi";
 import { toast } from "sonner";
 
 const DEMO_USER_ID = "demo-user-123";
@@ -24,7 +24,7 @@ export default function VirtualCloset() {
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const uploadMutation = useUploadClothingItem();
-  const deleteM utation = useDeleteClothingItem();
+  const deleteMutation = useDeleteClothingItem();
   const { data: closetData, refetch: refetchCloset } = useGetUserCloset(DEMO_USER_ID);
 
   const categories = [
@@ -65,11 +65,9 @@ export default function VirtualCloset() {
   };
 
   const handleFiles = (files: FileList) => {
-    const formData = new FormData();
     for (let i = 0; i < files.length; i++) {
       const file = files[i];
 
-      // Create a mock upload with demo data
       const mockItem = {
         userId: DEMO_USER_ID,
         title: file.name.replace(/\.[^/.]+$/, ""),
@@ -249,7 +247,6 @@ export default function VirtualCloset() {
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {filteredItems.map((item: any) => (
                 <div key={item._id} className="card-base overflow-hidden group hover:border-primary/30">
-                  {/* Image */}
                   <div className="relative h-48 bg-muted/50 overflow-hidden">
                     <img
                       src={item.imageUrl}
@@ -258,7 +255,6 @@ export default function VirtualCloset() {
                     />
                     <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors" />
 
-                    {/* Action buttons */}
                     <div className="absolute inset-0 flex items-center justify-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
                       <button className="w-10 h-10 rounded-full bg-primary text-primary-foreground flex items-center justify-center hover:bg-primary/90 transition-colors">
                         <Heart className="w-5 h-5" />
@@ -272,7 +268,6 @@ export default function VirtualCloset() {
                     </div>
                   </div>
 
-                  {/* Details */}
                   <div className="p-4 space-y-3">
                     <div>
                       <h3 className="font-semibold text-foreground truncate">
@@ -283,7 +278,6 @@ export default function VirtualCloset() {
                       </p>
                     </div>
 
-                    {/* Eco Score Bar */}
                     <div className="space-y-1">
                       <div className="flex items-center justify-between text-xs">
                         <span className="text-foreground/70">Eco Score</span>
@@ -299,7 +293,6 @@ export default function VirtualCloset() {
                       </div>
                     </div>
 
-                    {/* Tags */}
                     <div className="flex flex-wrap gap-1">
                       {item.color?.slice(0, 2).map((c: string) => (
                         <span
@@ -316,7 +309,6 @@ export default function VirtualCloset() {
                       )}
                     </div>
 
-                    {/* Sustainability Badge */}
                     <div className="pt-3 border-t border-border/40">
                       <div className="flex items-center justify-between text-xs">
                         <span className="text-foreground/60">

@@ -25,13 +25,23 @@ import {
   Star,
   ArrowRight,
   ChevronRight,
+  Award,
+  Sparkles,
 } from "lucide-react";
+import { useGetImpactMetrics, useGetAchievements, useGetUserCloset, useGetUserOutfits } from "@/hooks/useApi";
+import { EcoScoreCard } from "@/components/EcoScoreCard";
+
+const DEMO_USER_ID = "demo-user-123";
 
 export default function Dashboard() {
   const [selectedPeriod, setSelectedPeriod] = useState("week");
 
-  // Mock data for charts
-  const impactData = [
+  const { data: impactData } = useGetImpactMetrics(DEMO_USER_ID);
+  const { data: achievementsData } = useGetAchievements(DEMO_USER_ID);
+  const { data: closetData } = useGetUserCloset(DEMO_USER_ID);
+  const { data: outfitsData } = useGetUserOutfits(DEMO_USER_ID);
+
+  const impactChartData = [
     { day: "Mon", water: 120, emissions: 45, waste: 23 },
     { day: "Tue", water: 140, emissions: 52, waste: 28 },
     { day: "Wed", water: 100, emissions: 38, waste: 18 },
@@ -41,72 +51,34 @@ export default function Dashboard() {
     { day: "Sun", water: 150, emissions: 58, waste: 31 },
   ];
 
-  const categoryData = [
-    { name: "Tops", value: 45 },
-    { name: "Bottoms", value: 30 },
-    { name: "Dresses", value: 15 },
-    { name: "Accessories", value: 10 },
-  ];
+  const categoryData = closetData?.data?.length > 0 
+    ? [
+        {
+          name: "Tops",
+          value: closetData.data.filter((item: any) => item.category === "tops").length,
+        },
+        {
+          name: "Bottoms",
+          value: closetData.data.filter((item: any) => item.category === "bottoms").length,
+        },
+        {
+          name: "Dresses",
+          value: closetData.data.filter((item: any) => item.category === "dresses").length,
+        },
+        {
+          name: "Shoes",
+          value: closetData.data.filter((item: any) => item.category === "shoes").length,
+        },
+      ]
+    : [];
 
   const COLORS = ["#2d6f4c", "#4a9d6f", "#6db88f", "#8dd4ae"];
 
-  const recentOutfits = [
-    {
-      id: 1,
-      name: "Casual Weekend",
-      items: 3,
-      rating: 4.5,
-      saved: true,
-      emoji: "👕👖",
-    },
-    {
-      id: 2,
-      name: "Office Chic",
-      items: 4,
-      rating: 4.8,
-      saved: true,
-      emoji: "👔👗",
-    },
-    {
-      id: 3,
-      name: "Evening Out",
-      items: 3,
-      rating: 4.2,
-      saved: false,
-      emoji: "✨👗",
-    },
-  ];
+  const topEcoScoreItems = closetData?.data
+    ?.sort((a: any, b: any) => b.ecoScore - a.ecoScore)
+    ?.slice(0, 3) || [];
 
-  const activityFeed = [
-    {
-      id: 1,
-      action: "Created outfit",
-      item: "Casual Weekend",
-      time: "2 hours ago",
-      impact: "+450L water saved",
-    },
-    {
-      id: 2,
-      action: "Uploaded item",
-      item: "Blue Denim Jacket",
-      time: "5 hours ago",
-      impact: "Catalogued",
-    },
-    {
-      id: 3,
-      action: "Saved outfit",
-      item: "Office Chic",
-      time: "1 day ago",
-      impact: "+2.5kg CO2 avoided",
-    },
-    {
-      id: 4,
-      action: "Completed challenge",
-      item: "7-Day No New Purchase",
-      time: "2 days ago",
-      impact: "+100 points",
-    },
-  ];
+  const recentOutfits = outfitsData?.data?.slice(0, 3) || [];
 
   return (
     <Layout>
@@ -138,7 +110,12 @@ export default function Dashboard() {
                 <TrendingUp className="w-5 h-5 text-impact-positive" />
               </div>
               <div>
-                <p className="text-3xl font-bold text-foreground">2.4K</p>
+                <p className="text-3xl font-bold text-foreground">
+                  {impactData?.data?.waterSaved
+                    ? (impactData.data.waterSaved / 1000).toFixed(1)
+                    : "2.4"}
+                  K
+                </p>
                 <p className="text-sm text-foreground/60">Liters Saved This Week</p>
               </div>
               <div className="h-1 bg-muted rounded-full overflow-hidden">
@@ -155,7 +132,11 @@ export default function Dashboard() {
                 <TrendingUp className="w-5 h-5 text-impact-positive" />
               </div>
               <div>
-                <p className="text-3xl font-bold text-foreground">12.5</p>
+                <p className="text-3xl font-bold text-foreground">
+                  {impactData?.data?.co2Reduced
+                    ? (impactData.data.co2Reduced / 1000).toFixed(1)
+                    : "12.5"}
+                </p>
                 <p className="text-sm text-foreground/60">kg CO2 Avoided</p>
               </div>
               <div className="h-1 bg-muted rounded-full overflow-hidden">
@@ -172,11 +153,16 @@ export default function Dashboard() {
                 <TrendingUp className="w-5 h-5 text-impact-positive" />
               </div>
               <div>
-                <p className="text-3xl font-bold text-foreground">127</p>
+                <p className="text-3xl font-bold text-foreground">
+                  {closetData?.count || 0}
+                </p>
                 <p className="text-sm text-foreground/60">Items Catalogued</p>
               </div>
               <div className="h-1 bg-muted rounded-full overflow-hidden">
-                <div className="h-full bg-primary w-4/5 rounded-full" />
+                <div
+                  className="h-full bg-primary w-4/5 rounded-full"
+                  style={{ width: `${Math.min(100, (closetData?.count || 0) * 5)}%` }}
+                />
               </div>
             </div>
 
@@ -189,7 +175,9 @@ export default function Dashboard() {
                 <TrendingUp className="w-5 h-5 text-impact-positive" />
               </div>
               <div>
-                <p className="text-3xl font-bold text-foreground">43</p>
+                <p className="text-3xl font-bold text-foreground">
+                  {outfitsData?.count || 0}
+                </p>
                 <p className="text-sm text-foreground/60">Outfits This Week</p>
               </div>
               <div className="h-1 bg-muted rounded-full overflow-hidden">
@@ -223,7 +211,7 @@ export default function Dashboard() {
                 </div>
               </div>
               <ResponsiveContainer width="100%" height={300}>
-                <LineChart data={impactData}>
+                <LineChart data={impactChartData}>
                   <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
                   <XAxis dataKey="day" stroke="var(--muted-foreground)" />
                   <YAxis stroke="var(--muted-foreground)" />
@@ -248,146 +236,181 @@ export default function Dashboard() {
             </div>
 
             {/* Closet Composition */}
-            <div className="card-base p-6 flex flex-col">
-              <h2 className="text-xl font-semibold text-foreground mb-6">
-                Closet Composition
-              </h2>
-              <ResponsiveContainer width="100%" height={250}>
-                <PieChart>
-                  <Pie
-                    data={categoryData}
-                    cx="50%"
-                    cy="50%"
-                    innerRadius={60}
-                    outerRadius={90}
-                    paddingAngle={2}
-                    dataKey="value"
-                  >
-                    {categoryData.map((entry, index) => (
-                      <Cell
-                        key={`cell-${index}`}
-                        fill={COLORS[index % COLORS.length]}
-                      />
-                    ))}
-                  </Pie>
-                  <Tooltip
-                    contentStyle={{
-                      backgroundColor: "var(--card)",
-                      border: `1px solid var(--border)`,
-                      borderRadius: "0.75rem",
-                    }}
-                    textStyle={{ color: "var(--foreground)" }}
-                  />
-                </PieChart>
-              </ResponsiveContainer>
-              <div className="space-y-2 mt-6">
-                {categoryData.map((item, index) => (
-                  <div key={item.name} className="flex items-center gap-3">
-                    <div
-                      className="w-3 h-3 rounded-full"
-                      style={{ backgroundColor: COLORS[index] }}
+            {categoryData.length > 0 && (
+              <div className="card-base p-6 flex flex-col">
+                <h2 className="text-xl font-semibold text-foreground mb-6">
+                  Closet Composition
+                </h2>
+                <ResponsiveContainer width="100%" height={250}>
+                  <PieChart>
+                    <Pie
+                      data={categoryData}
+                      cx="50%"
+                      cy="50%"
+                      innerRadius={60}
+                      outerRadius={90}
+                      paddingAngle={2}
+                      dataKey="value"
+                    >
+                      {categoryData.map((entry, index) => (
+                        <Cell
+                          key={`cell-${index}`}
+                          fill={COLORS[index % COLORS.length]}
+                        />
+                      ))}
+                    </Pie>
+                    <Tooltip
+                      contentStyle={{
+                        backgroundColor: "var(--card)",
+                        border: `1px solid var(--border)`,
+                        borderRadius: "0.75rem",
+                      }}
+                      textStyle={{ color: "var(--foreground)" }}
                     />
-                    <span className="text-sm text-foreground/70">
-                      {item.name}
-                    </span>
-                    <span className="ml-auto text-sm font-semibold text-foreground">
-                      {item.value}
-                    </span>
-                  </div>
-                ))}
+                  </PieChart>
+                </ResponsiveContainer>
+                <div className="space-y-2 mt-6">
+                  {categoryData.map((item, index) => (
+                    <div key={item.name} className="flex items-center gap-3">
+                      <div
+                        className="w-3 h-3 rounded-full"
+                        style={{ backgroundColor: COLORS[index] }}
+                      />
+                      <span className="text-sm text-foreground/70">
+                        {item.name}
+                      </span>
+                      <span className="ml-auto text-sm font-semibold text-foreground">
+                        {item.value}
+                      </span>
+                    </div>
+                  ))}
+                </div>
               </div>
-            </div>
+            )}
           </div>
 
           <div className="grid lg:grid-cols-3 gap-6">
+            {/* Top Eco Score Items */}
+            {topEcoScoreItems.length > 0 && (
+              <div className="lg:col-span-1">
+                <h2 className="text-xl font-semibold text-foreground mb-4">
+                  Most Sustainable Items
+                </h2>
+                <div className="space-y-4">
+                  {topEcoScoreItems.map((item: any) => (
+                    <div
+                      key={item._id}
+                      className="card-base p-4 space-y-2"
+                    >
+                      <div className="flex items-start justify-between">
+                        <h4 className="font-semibold text-foreground text-sm">
+                          {item.title}
+                        </h4>
+                        <span className="px-2 py-1 bg-primary/10 text-primary rounded text-xs font-bold">
+                          {item.ecoScore}
+                        </span>
+                      </div>
+                      <p className="text-xs text-foreground/60">
+                        {item.brand || "No brand"}
+                      </p>
+                      <div className="h-1 bg-muted rounded-full overflow-hidden">
+                        <div
+                          className="h-full bg-gradient-to-r from-primary to-nature"
+                          style={{ width: `${item.ecoScore}%` }}
+                        />
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
             {/* Quick Outfit Suggestions */}
-            <div className="lg:col-span-2 card-base p-6">
-              <div className="flex items-center justify-between mb-6">
+            <div className={recentOutfits.length > 0 ? "lg:col-span-2" : "lg:col-span-3"}>
+              <div className="flex items-center justify-between mb-4">
                 <h2 className="text-xl font-semibold text-foreground">
-                  Suggested Outfits
+                  Recent Outfits
                 </h2>
                 <a
-                  href="#"
+                  href="/outfit-generator"
                   className="text-primary hover:text-primary/80 font-semibold flex items-center gap-1 transition-colors"
                 >
                   View All
                   <ChevronRight className="w-4 h-4" />
                 </a>
               </div>
-              <div className="space-y-4">
-                {recentOutfits.map((outfit) => (
-                  <div
-                    key={outfit.id}
-                    className="flex items-center justify-between p-4 rounded-lg border border-border/40 hover:border-primary/30 hover:bg-muted/20 transition-all group"
-                  >
-                    <div className="flex items-center gap-4">
-                      <div className="text-4xl">{outfit.emoji}</div>
-                      <div>
-                        <h4 className="font-semibold text-foreground">
-                          {outfit.name}
-                        </h4>
-                        <p className="text-sm text-foreground/60">
-                          {outfit.items} items
-                        </p>
+              {recentOutfits.length > 0 ? (
+                <div className="space-y-4">
+                  {recentOutfits.map((outfit: any) => (
+                    <div
+                      key={outfit._id}
+                      className="flex items-center justify-between p-4 rounded-lg border border-border/40 hover:border-primary/30 hover:bg-muted/20 transition-all group card-base"
+                    >
+                      <div className="flex items-center gap-4">
+                        <div className="text-4xl">👗</div>
+                        <div>
+                          <h4 className="font-semibold text-foreground">
+                            {outfit.title}
+                          </h4>
+                          <p className="text-sm text-foreground/60">
+                            {outfit.items?.length || 0} items
+                          </p>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-4">
+                        {outfit.rating && (
+                          <div className="flex items-center gap-1">
+                            <Star className="w-4 h-4 fill-accent text-accent" />
+                            <span className="text-sm font-medium text-foreground">
+                              {outfit.rating}
+                            </span>
+                          </div>
+                        )}
+                        <button className="p-2 hover:bg-primary/10 rounded-lg transition-colors opacity-0 group-hover:opacity-100">
+                          <Heart className="w-5 h-5 text-foreground/40" />
+                        </button>
                       </div>
                     </div>
-                    <div className="flex items-center gap-4">
-                      <div className="flex items-center gap-1">
-                        <Star className="w-4 h-4 fill-accent text-accent" />
-                        <span className="text-sm font-medium text-foreground">
-                          {outfit.rating}
-                        </span>
-                      </div>
-                      <button className="p-2 hover:bg-primary/10 rounded-lg transition-colors group-hover:opacity-100 opacity-0">
-                        <Heart
-                          className={`w-5 h-5 ${
-                            outfit.saved
-                              ? "fill-impact-positive text-impact-positive"
-                              : "text-foreground/40"
-                          }`}
-                        />
-                      </button>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            {/* Recent Activity */}
-            <div className="card-base p-6">
-              <div className="flex items-center justify-between mb-6">
-                <h2 className="text-xl font-semibold text-foreground">
-                  Recent Activity
-                </h2>
-                <Calendar className="w-5 h-5 text-foreground/40" />
-              </div>
-              <div className="space-y-4">
-                {activityFeed.map((item) => (
-                  <div key={item.id} className="space-y-2">
-                    <div className="flex items-start gap-3">
-                      <div className="w-2 h-2 rounded-full bg-primary mt-2 flex-shrink-0" />
-                      <div className="flex-1 min-w-0">
-                        <p className="text-sm font-medium text-foreground truncate">
-                          {item.action}
-                        </p>
-                        <p className="text-xs text-foreground/60 truncate">
-                          {item.item}
-                        </p>
-                      </div>
-                    </div>
-                    <div className="flex justify-between items-center ml-5">
-                      <span className="text-xs text-foreground/50">
-                        {item.time}
-                      </span>
-                      <span className="text-xs text-impact-positive font-medium">
-                        {item.impact}
-                      </span>
-                    </div>
-                  </div>
-                ))}
-              </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="card-base p-8 text-center space-y-4">
+                  <Sparkles className="w-8 h-8 text-foreground/40 mx-auto" />
+                  <p className="text-foreground/70">
+                    No outfits generated yet. Start with the AI Outfit Generator!
+                  </p>
+                </div>
+              )}
             </div>
           </div>
+
+          {/* Achievements Section */}
+          {achievementsData?.data?.length > 0 && (
+            <div className="card-base p-8 space-y-6">
+              <div className="flex items-center gap-2">
+                <Award className="w-6 h-6 text-accent" />
+                <h2 className="text-2xl font-bold text-foreground">
+                  Achievements
+                </h2>
+              </div>
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                {achievementsData.data.map((achievement: any) => (
+                  <div
+                    key={achievement.id}
+                    className="text-center p-4 rounded-lg bg-muted/50 hover:bg-muted transition-colors"
+                  >
+                    <div className="text-4xl mb-2">{achievement.icon}</div>
+                    <h4 className="font-semibold text-foreground text-sm">
+                      {achievement.title}
+                    </h4>
+                    <p className="text-xs text-foreground/60 mt-1">
+                      {achievement.description}
+                    </p>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
 
           {/* CTA Section */}
           <div className="bg-gradient-to-r from-primary/10 to-nature/10 rounded-xl border border-primary/20 p-8 md:p-12">

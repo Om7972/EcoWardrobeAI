@@ -12,6 +12,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
     { label: "Dashboard", path: "/dashboard" },
     { label: "Virtual Closet", path: "/closet" },
     { label: "AI Outfit", path: "/outfit-generator" },
+    { label: "Thrift Swap", path: "/thrift-swap" },
     { label: "Sustainability", path: "/sustainability" },
   ];
 

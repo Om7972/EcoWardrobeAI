@@ -7,6 +7,7 @@ import * as clothingRoutes from "./routes/clothing";
 import * as outfitRoutes from "./routes/outfits";
 import * as impactRoutes from "./routes/impact";
 import * as userRoutes from "./routes/users";
+import * as marketplaceRoutes from "./routes/marketplace";
 
 let dbConnected = false;
 
@@ -66,6 +67,17 @@ export async function createServer(): Promise<Express> {
   app.get("/api/impact/:userId/metrics", impactRoutes.calculateImpactMetrics);
   app.get("/api/impact/:userId/history", impactRoutes.getImpactHistory);
   app.get("/api/impact/:userId/achievements", impactRoutes.getAchievements);
+
+  // Marketplace/Thrift Swap routes
+  app.post("/api/marketplace/listings", marketplaceRoutes.createSwapListing);
+  app.get("/api/marketplace/listings", marketplaceRoutes.getAllListings);
+  app.get("/api/marketplace/listings/:listingId", marketplaceRoutes.getListing);
+  app.get("/api/marketplace/user/:userId/listings", marketplaceRoutes.getUserListings);
+  app.post("/api/marketplace/requests", marketplaceRoutes.createSwapRequest);
+  app.get("/api/marketplace/user/:userId/requests", marketplaceRoutes.getUserSwapRequests);
+  app.put("/api/marketplace/requests/:requestId/accept", marketplaceRoutes.acceptSwapRequest);
+  app.put("/api/marketplace/requests/:requestId/reject", marketplaceRoutes.rejectSwapRequest);
+  app.put("/api/marketplace/listings/:listingId/rate", marketplaceRoutes.rateListing);
 
   return app;
 }

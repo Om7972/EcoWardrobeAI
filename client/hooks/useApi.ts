@@ -202,3 +202,131 @@ export function useGetAchievements(userId: string) {
     enabled: !!userId,
   });
 }
+
+// Marketplace/Thrift Swap API hooks
+export function useCreateSwapListing() {
+  return useMutation({
+    mutationFn: async (data: {
+      userId: string;
+      itemId: string;
+      title: string;
+      description?: string;
+      condition: "like-new" | "excellent" | "good" | "fair";
+      size?: string;
+      brand?: string;
+      category?: string;
+      imageUrl: string;
+      desiredItems?: string[];
+    }) => {
+      const res = await fetch(`${API_BASE}/marketplace/listings`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(data),
+      });
+      if (!res.ok) throw new Error("Failed to create listing");
+      return res.json();
+    },
+  });
+}
+
+export function useGetAllListings() {
+  return useQuery({
+    queryKey: ["marketplace-listings"],
+    queryFn: async () => {
+      const res = await fetch(`${API_BASE}/marketplace/listings`);
+      if (!res.ok) throw new Error("Failed to fetch listings");
+      return res.json();
+    },
+  });
+}
+
+export function useGetUserListings(userId: string) {
+  return useQuery({
+    queryKey: ["user-listings", userId],
+    queryFn: async () => {
+      const res = await fetch(`${API_BASE}/marketplace/user/${userId}/listings`);
+      if (!res.ok) throw new Error("Failed to fetch listings");
+      return res.json();
+    },
+    enabled: !!userId,
+  });
+}
+
+export function useCreateSwapRequest() {
+  return useMutation({
+    mutationFn: async (data: {
+      listingId: string;
+      fromUserId: string;
+      offeredItemId: string;
+      desiredItemId: string;
+      message?: string;
+    }) => {
+      const res = await fetch(`${API_BASE}/marketplace/requests`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(data),
+      });
+      if (!res.ok) throw new Error("Failed to create swap request");
+      return res.json();
+    },
+  });
+}
+
+export function useGetUserSwapRequests(userId: string) {
+  return useQuery({
+    queryKey: ["swap-requests", userId],
+    queryFn: async () => {
+      const res = await fetch(`${API_BASE}/marketplace/user/${userId}/requests`);
+      if (!res.ok) throw new Error("Failed to fetch requests");
+      return res.json();
+    },
+    enabled: !!userId,
+  });
+}
+
+export function useAcceptSwapRequest() {
+  return useMutation({
+    mutationFn: async (requestId: string) => {
+      const res = await fetch(
+        `${API_BASE}/marketplace/requests/${requestId}/accept`,
+        { method: "PUT" }
+      );
+      if (!res.ok) throw new Error("Failed to accept request");
+      return res.json();
+    },
+  });
+}
+
+export function useRejectSwapRequest() {
+  return useMutation({
+    mutationFn: async (requestId: string) => {
+      const res = await fetch(
+        `${API_BASE}/marketplace/requests/${requestId}/reject`,
+        { method: "PUT" }
+      );
+      if (!res.ok) throw new Error("Failed to reject request");
+      return res.json();
+    },
+  });
+}
+
+export function useRateMarketplaceListing() {
+  return useMutation({
+    mutationFn: async (data: {
+      listingId: string;
+      rating: number;
+      review?: string;
+    }) => {
+      const res = await fetch(
+        `${API_BASE}/marketplace/listings/${data.listingId}/rate`,
+        {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ rating: data.rating, review: data.review }),
+        }
+      );
+      if (!res.ok) throw new Error("Failed to rate listing");
+      return res.json();
+    },
+  });
+}

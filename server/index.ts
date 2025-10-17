@@ -8,6 +8,7 @@ import * as outfitRoutes from "./routes/outfits";
 import * as impactRoutes from "./routes/impact";
 import * as userRoutes from "./routes/users";
 import * as marketplaceRoutes from "./routes/marketplace";
+import * as styleCoachRoutes from "./routes/styleCoach";
 
 let dbConnected = false;
 
@@ -78,6 +79,13 @@ export async function createServer(): Promise<Express> {
   app.put("/api/marketplace/requests/:requestId/accept", marketplaceRoutes.acceptSwapRequest);
   app.put("/api/marketplace/requests/:requestId/reject", marketplaceRoutes.rejectSwapRequest);
   app.put("/api/marketplace/listings/:listingId/rate", marketplaceRoutes.rateListing);
+
+  // AI Style Coach routes
+  app.get("/api/style-coach/daily-suggestions", styleCoachRoutes.getDailySuggestions);
+  app.post("/api/style-coach/outfit-advice", styleCoachRoutes.getOutfitAdvice);
+  app.get("/api/style-coach/weekly-insights", styleCoachRoutes.getWeeklyInsights);
+  app.get("/api/style-coach/seasonal/:season", styleCoachRoutes.getSeasonalGuidance);
+  app.get("/api/style-coach/tips", styleCoachRoutes.getStyleTips);
 
   return app;
 }

@@ -51,9 +51,8 @@ const clothingItemSchema = new mongoose.Schema<IClothingItem>(
   { timestamps: true }
 );
 
-export const ClothingItem = mongoose.model<IClothingItem>(
-  "ClothingItem",
-  clothingItemSchema
-);
+export const ClothingItem =
+  mongoose.models.ClothingItem ||
+  mongoose.model<IClothingItem>("ClothingItem", clothingItemSchema);
 
 export type { IClothingItem };

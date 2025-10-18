@@ -9,6 +9,7 @@ import VirtualCloset from "./pages/VirtualCloset";
 import OutfitGenerator from "./pages/OutfitGenerator";
 import Sustainability from "./pages/Sustainability";
 import ThriftSwap from "./pages/ThriftSwap";
+import GarmentDetail from "./pages/GarmentDetail";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -27,6 +28,7 @@ export default function App() {
             <Route path="/outfit-generator" element={<OutfitGenerator />} />
             <Route path="/sustainability" element={<Sustainability />} />
             <Route path="/thrift-swap" element={<ThriftSwap />} />
+            <Route path="/garment/:id" element={<GarmentDetail />} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
           </Routes>

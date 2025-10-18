@@ -1,5 +1,7 @@
 import { useState } from "react";
 import Layout from "@/components/Layout";
+import { CircularMatchesModal } from "@/components/CircularMatchesModal";
+import { EcoMaintenanceWidget } from "@/components/EcoMaintenanceWidget";
 import {
   BarChart,
   Bar,
@@ -27,6 +29,7 @@ import {
   ChevronRight,
   Award,
   Sparkles,
+  Shuffle,
 } from "lucide-react";
 import { useGetImpactMetrics, useGetAchievements, useGetUserCloset, useGetUserOutfits } from "@/hooks/useApi";
 import { EcoScoreCard } from "@/components/EcoScoreCard";
@@ -35,6 +38,7 @@ const DEMO_USER_ID = "demo-user-123";
 
 export default function Dashboard() {
   const [selectedPeriod, setSelectedPeriod] = useState("week");
+  const [showCircularMatches, setShowCircularMatches] = useState(false);
 
   const { data: impactData } = useGetImpactMetrics(DEMO_USER_ID);
   const { data: achievementsData } = useGetAchievements(DEMO_USER_ID);
@@ -412,6 +416,32 @@ export default function Dashboard() {
             </div>
           )}
 
+          {/* Circular Matches Promotion */}
+          <div className="card-base p-8 md:p-12 space-y-6 border-l-4 border-primary bg-gradient-to-r from-primary/5 to-transparent">
+            <div className="flex items-center justify-between">
+              <div className="space-y-3">
+                <h2 className="text-2xl font-bold text-foreground flex items-center gap-2">
+                  <Shuffle className="w-7 h-7 text-primary" />
+                  Circular Matches
+                </h2>
+                <p className="text-foreground/70">
+                  Discover perfect swap opportunities with compatible users based on style and size!
+                </p>
+              </div>
+              <button
+                onClick={() => setShowCircularMatches(true)}
+                className="px-8 py-3 bg-primary text-primary-foreground rounded-lg font-semibold hover:bg-primary/90 transition-colors whitespace-nowrap"
+              >
+                Explore Matches
+              </button>
+            </div>
+          </div>
+
+          {/* Eco-Maintenance Section */}
+          <div className="border-t border-border/40 pt-12">
+            <EcoMaintenanceWidget />
+          </div>
+
           {/* CTA Section */}
           <div className="bg-gradient-to-r from-primary/10 to-nature/10 rounded-xl border border-primary/20 p-8 md:p-12">
             <div className="max-w-2xl">
@@ -439,6 +469,13 @@ export default function Dashboard() {
               </div>
             </div>
           </div>
+
+          {/* Circular Matches Modal */}
+          <CircularMatchesModal
+            isOpen={showCircularMatches}
+            onClose={() => setShowCircularMatches(false)}
+            userStyles={["casual", "minimalist", "vintage"]}
+          />
         </div>
       </main>
     </Layout>

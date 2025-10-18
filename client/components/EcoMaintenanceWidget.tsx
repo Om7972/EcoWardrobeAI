@@ -174,13 +174,6 @@ export function EcoMaintenanceWidget() {
 
         {/* Weather Summary */}
         <div className="grid grid-cols-3 gap-4">
-          {nextWeek.reduce((acc, day) => {
-            acc.rainyDays += day.description.includes("Rainy") ? 1 : 0;
-            acc.avgHumidity = (acc.avgHumidity + day.humidity) / 2;
-            acc.maxTemp = Math.max(acc.maxTemp, day.temp);
-            return acc;
-          }, { rainyDays: 0, avgHumidity: 0, maxTemp: 0 }) as any}
-          
           <div className="space-y-2">
             <div className="flex items-center gap-2 text-sm text-foreground/70">
               <Droplet className="w-4 h-4" />

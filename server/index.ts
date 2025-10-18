@@ -9,6 +9,7 @@ import * as impactRoutes from "./routes/impact";
 import * as userRoutes from "./routes/users";
 import * as marketplaceRoutes from "./routes/marketplace";
 import * as styleCoachRoutes from "./routes/styleCoach";
+import * as featureRoutes from "./routes/features";
 
 let dbConnected = false;
 
@@ -86,6 +87,12 @@ export async function createServer(): Promise<Express> {
   app.get("/api/style-coach/weekly-insights", styleCoachRoutes.getWeeklyInsights);
   app.get("/api/style-coach/seasonal/:season", styleCoachRoutes.getSeasonalGuidance);
   app.get("/api/style-coach/tips", styleCoachRoutes.getStyleTips);
+
+  // Premium Features routes
+  app.post("/api/features/analyze-footprint", featureRoutes.analyzeMaterialFootprint);
+  app.get("/api/features/circular-matches", featureRoutes.getCircularMatches);
+  app.get("/api/features/maintenance-report", featureRoutes.getMaintenanceReport);
+  app.get("/api/features/weather-forecast", featureRoutes.getWeatherForecast);
 
   return app;
 }

@@ -46,6 +46,8 @@ const outfitSchema = new mongoose.Schema<IOutfit>(
   { timestamps: true }
 );
 
-export const Outfit = mongoose.model<IOutfit>("Outfit", outfitSchema);
+export const Outfit =
+  mongoose.models.Outfit ||
+  mongoose.model<IOutfit>("Outfit", outfitSchema);
 
 export type { IOutfit };

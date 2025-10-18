@@ -55,9 +55,8 @@ const swapListingSchema = new mongoose.Schema<ISwapListing>(
   { timestamps: true }
 );
 
-export const SwapListing = mongoose.model<ISwapListing>(
-  "SwapListing",
-  swapListingSchema
-);
+export const SwapListing =
+  mongoose.models.SwapListing ||
+  mongoose.model<ISwapListing>("SwapListing", swapListingSchema);
 
 export type { ISwapListing };

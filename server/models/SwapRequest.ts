@@ -30,9 +30,8 @@ const swapRequestSchema = new mongoose.Schema<ISwapRequest>(
   { timestamps: true }
 );
 
-export const SwapRequest = mongoose.model<ISwapRequest>(
-  "SwapRequest",
-  swapRequestSchema
-);
+export const SwapRequest =
+  mongoose.models.SwapRequest ||
+  mongoose.model<ISwapRequest>("SwapRequest", swapRequestSchema);
 
 export type { ISwapRequest };

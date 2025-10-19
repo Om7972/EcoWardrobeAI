@@ -113,7 +113,14 @@ export default function StyleCircles() {
     ? posts.filter((p) => p.circleId === selectedCircle)
     : posts;
 
-  const categories = ["all", "lifestyle", "fashion", "style", "professional", "student"];
+  const categories = [
+    "all",
+    "lifestyle",
+    "fashion",
+    "style",
+    "professional",
+    "student",
+  ];
 
   const getPostIcon = (type: string) => {
     switch (type) {
@@ -170,7 +177,8 @@ export default function StyleCircles() {
               </h1>
             </div>
             <p className="text-lg text-foreground/70 max-w-2xl">
-              Join communities, share outfits, swap items, and earn eco-friendly badges
+              Join communities, share outfits, swap items, and earn eco-friendly
+              badges
             </p>
           </div>
         </div>
@@ -219,7 +227,9 @@ export default function StyleCircles() {
                         : "bg-muted text-foreground/70 hover:bg-muted/80"
                     }`}
                   >
-                    {cat === "all" ? "All" : cat.charAt(0).toUpperCase() + cat.slice(1)}
+                    {cat === "all"
+                      ? "All"
+                      : cat.charAt(0).toUpperCase() + cat.slice(1)}
                   </button>
                 ))}
               </div>
@@ -325,7 +335,9 @@ export default function StyleCircles() {
                         </p>
                         <div className="flex items-center gap-2 text-xs text-foreground/50">
                           <span>{post.timestamp}</span>
-                          <span className="text-lg">{getPostIcon(post.type)}</span>
+                          <span className="text-lg">
+                            {getPostIcon(post.type)}
+                          </span>
                         </div>
                       </div>
                     </div>
@@ -386,7 +398,7 @@ export default function StyleCircles() {
                 <div
                   key={badge.id}
                   className={`p-4 rounded-lg border-2 text-center space-y-2 hover:shadow-md transition-all ${getBadgeColor(
-                    badge.color
+                    badge.color,
                   )}`}
                 >
                   <div className="text-4xl">{badge.icon}</div>
@@ -420,13 +432,15 @@ export default function StyleCircles() {
                 },
                 {
                   title: "Swap Week",
-                  description: "Complete 3 swaps and help another member refresh!",
+                  description:
+                    "Complete 3 swaps and help another member refresh!",
                   emoji: "🔄",
                   participants: 156,
                 },
                 {
                   title: "Eco Challenge",
-                  description: "Style only sustainable items. Max eco-friendly look!",
+                  description:
+                    "Style only sustainable items. Max eco-friendly look!",
                   emoji: "🌿",
                   participants: 389,
                 },
@@ -436,7 +450,9 @@ export default function StyleCircles() {
                   className="p-6 bg-card border border-border/50 rounded-lg space-y-3 hover:border-primary/30 transition-all"
                 >
                   <div className="text-3xl">{challenge.emoji}</div>
-                  <h3 className="font-bold text-foreground">{challenge.title}</h3>
+                  <h3 className="font-bold text-foreground">
+                    {challenge.title}
+                  </h3>
                   <p className="text-sm text-foreground/70">
                     {challenge.description}
                   </p>

@@ -74,7 +74,7 @@ export default function CareRepairHub() {
     try {
       setLoading(true);
       const res = await fetch(
-        `/api/care/instructions?fabricType=${selectedFabric}`
+        `/api/care/instructions?fabricType=${selectedFabric}`,
       );
       if (!res.ok) throw new Error("Failed to fetch care instructions");
       const data = await res.json();
@@ -89,7 +89,9 @@ export default function CareRepairHub() {
 
   const fetchNearbyServices = async () => {
     try {
-      const res = await fetch(`/api/care/nearby-services?serviceType=${serviceType}`);
+      const res = await fetch(
+        `/api/care/nearby-services?serviceType=${serviceType}`,
+      );
       if (!res.ok) throw new Error("Failed to fetch services");
       const data = await res.json();
       setServices(data.data);
@@ -112,7 +114,8 @@ export default function CareRepairHub() {
               </h1>
             </div>
             <p className="text-lg text-foreground/70 max-w-2xl">
-              Extend the life of your clothing with smart care instructions, repair tracking, and local tailor services
+              Extend the life of your clothing with smart care instructions,
+              repair tracking, and local tailor services
             </p>
           </div>
         </div>
@@ -201,19 +204,21 @@ export default function CareRepairHub() {
                         </h3>
                       </div>
                       <div className="space-y-3">
-                        {careLabel.dryingInstructions.map((instruction, idx) => (
-                          <div
-                            key={idx}
-                            className="p-3 bg-green-50/50 border border-green-200/30 rounded-lg flex gap-3"
-                          >
-                            <div className="w-6 h-6 rounded-full bg-green-600 text-white flex items-center justify-center flex-shrink-0 text-sm font-bold">
-                              {idx + 1}
+                        {careLabel.dryingInstructions.map(
+                          (instruction, idx) => (
+                            <div
+                              key={idx}
+                              className="p-3 bg-green-50/50 border border-green-200/30 rounded-lg flex gap-3"
+                            >
+                              <div className="w-6 h-6 rounded-full bg-green-600 text-white flex items-center justify-center flex-shrink-0 text-sm font-bold">
+                                {idx + 1}
+                              </div>
+                              <p className="text-foreground/80 text-sm">
+                                {instruction}
+                              </p>
                             </div>
-                            <p className="text-foreground/80 text-sm">
-                              {instruction}
-                            </p>
-                          </div>
-                        ))}
+                          ),
+                        )}
                       </div>
                     </div>
 
@@ -225,15 +230,19 @@ export default function CareRepairHub() {
                         </h3>
                       </div>
                       <div className="space-y-2">
-                        {careLabel.specialInstructions.map((instruction, idx) => (
-                          <div
-                            key={idx}
-                            className="p-2 bg-orange-50/50 border border-orange-200/30 rounded-lg text-sm text-foreground/80 flex gap-2"
-                          >
-                            <span className="text-orange-600 font-bold">•</span>
-                            {instruction}
-                          </div>
-                        ))}
+                        {careLabel.specialInstructions.map(
+                          (instruction, idx) => (
+                            <div
+                              key={idx}
+                              className="p-2 bg-orange-50/50 border border-orange-200/30 rounded-lg text-sm text-foreground/80 flex gap-2"
+                            >
+                              <span className="text-orange-600 font-bold">
+                                •
+                              </span>
+                              {instruction}
+                            </div>
+                          ),
+                        )}
                       </div>
                     </div>
                   </div>

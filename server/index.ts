@@ -76,24 +76,54 @@ export async function createServer(): Promise<Express> {
   app.post("/api/marketplace/listings", marketplaceRoutes.createSwapListing);
   app.get("/api/marketplace/listings", marketplaceRoutes.getAllListings);
   app.get("/api/marketplace/listings/:listingId", marketplaceRoutes.getListing);
-  app.get("/api/marketplace/user/:userId/listings", marketplaceRoutes.getUserListings);
+  app.get(
+    "/api/marketplace/user/:userId/listings",
+    marketplaceRoutes.getUserListings,
+  );
   app.post("/api/marketplace/requests", marketplaceRoutes.createSwapRequest);
-  app.get("/api/marketplace/user/:userId/requests", marketplaceRoutes.getUserSwapRequests);
-  app.put("/api/marketplace/requests/:requestId/accept", marketplaceRoutes.acceptSwapRequest);
-  app.put("/api/marketplace/requests/:requestId/reject", marketplaceRoutes.rejectSwapRequest);
-  app.put("/api/marketplace/listings/:listingId/rate", marketplaceRoutes.rateListing);
+  app.get(
+    "/api/marketplace/user/:userId/requests",
+    marketplaceRoutes.getUserSwapRequests,
+  );
+  app.put(
+    "/api/marketplace/requests/:requestId/accept",
+    marketplaceRoutes.acceptSwapRequest,
+  );
+  app.put(
+    "/api/marketplace/requests/:requestId/reject",
+    marketplaceRoutes.rejectSwapRequest,
+  );
+  app.put(
+    "/api/marketplace/listings/:listingId/rate",
+    marketplaceRoutes.rateListing,
+  );
 
   // AI Style Coach routes
-  app.get("/api/style-coach/daily-suggestions", styleCoachRoutes.getDailySuggestions);
+  app.get(
+    "/api/style-coach/daily-suggestions",
+    styleCoachRoutes.getDailySuggestions,
+  );
   app.post("/api/style-coach/outfit-advice", styleCoachRoutes.getOutfitAdvice);
-  app.get("/api/style-coach/weekly-insights", styleCoachRoutes.getWeeklyInsights);
-  app.get("/api/style-coach/seasonal/:season", styleCoachRoutes.getSeasonalGuidance);
+  app.get(
+    "/api/style-coach/weekly-insights",
+    styleCoachRoutes.getWeeklyInsights,
+  );
+  app.get(
+    "/api/style-coach/seasonal/:season",
+    styleCoachRoutes.getSeasonalGuidance,
+  );
   app.get("/api/style-coach/tips", styleCoachRoutes.getStyleTips);
 
   // Premium Features routes
-  app.post("/api/features/analyze-footprint", featureRoutes.analyzeMaterialFootprint);
+  app.post(
+    "/api/features/analyze-footprint",
+    featureRoutes.analyzeMaterialFootprint,
+  );
   app.get("/api/features/circular-matches", featureRoutes.getCircularMatches);
-  app.get("/api/features/maintenance-report", featureRoutes.getMaintenanceReport);
+  app.get(
+    "/api/features/maintenance-report",
+    featureRoutes.getMaintenanceReport,
+  );
   app.get("/api/features/weather-forecast", featureRoutes.getWeatherForecast);
 
   // Care & Repair routes
@@ -105,10 +135,16 @@ export async function createServer(): Promise<Express> {
   // Community/Style Circles routes
   app.get("/api/community/circles", communityRoutes.getCircles);
   app.get("/api/community/circles/:circleId", communityRoutes.getCircleById);
-  app.get("/api/community/circles/:circleId/feed", communityRoutes.getCircleFeed);
+  app.get(
+    "/api/community/circles/:circleId/feed",
+    communityRoutes.getCircleFeed,
+  );
   app.get("/api/community/feed", communityRoutes.getCommunityFeed);
   app.get("/api/community/badges", communityRoutes.getAvailableBadges);
-  app.get("/api/community/users/:userId/badges", communityRoutes.getUserBadgesHandler);
+  app.get(
+    "/api/community/users/:userId/badges",
+    communityRoutes.getUserBadgesHandler,
+  );
 
   return app;
 }

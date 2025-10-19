@@ -233,7 +233,11 @@ const mockLocalServices: LocalService[] = [
     address: "101 Clean St, Your Neighborhood",
     phone: "+1 (555) 456-7890",
     hours: "8 AM - 8 PM, Open Daily",
-    specialties: ["Eco-friendly cleaning", "Delicate garments", "Stain removal"],
+    specialties: [
+      "Eco-friendly cleaning",
+      "Delicate garments",
+      "Stain removal",
+    ],
   },
 ];
 
@@ -244,7 +248,7 @@ export function getCareLabel(fabricType: string): CareLabel {
 
 export function generateRepairLog(
   garmentId: string,
-  garmentName: string
+  garmentName: string,
 ): RepairLog[] {
   const repairTypes: RepairLog[] = [
     {
@@ -255,7 +259,8 @@ export function generateRepairLog(
       cost: 25,
       date: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString(),
       tailor: "Master Tailoring",
-      notes: "Zipper was broken at top stopper. Successfully replaced with matching metal zipper.",
+      notes:
+        "Zipper was broken at top stopper. Successfully replaced with matching metal zipper.",
     },
     {
       id: `repair-${Date.now()}-2`,
@@ -275,25 +280,28 @@ export function generateRepairLog(
       cost: 35,
       date: new Date(Date.now() - 90 * 24 * 60 * 60 * 1000).toISOString(),
       tailor: "Master Tailoring",
-      notes: "Custom pocket design added to vintage jacket. Enhanced functionality and style.",
+      notes:
+        "Custom pocket design added to vintage jacket. Enhanced functionality and style.",
     },
   ];
   return repairTypes;
 }
 
-export function getLocalServices(type?: "tailor" | "cobbler" | "cleaner" | "leather-repair"): LocalService[] {
+export function getLocalServices(
+  type?: "tailor" | "cobbler" | "cleaner" | "leather-repair",
+): LocalService[] {
   if (!type) return mockLocalServices;
   return mockLocalServices.filter((service) => service.type === type);
 }
 
 export function searchNearbyServices(
   serviceType: string,
-  maxDistance: number = 5
+  maxDistance: number = 5,
 ): LocalService[] {
   return mockLocalServices
     .filter(
       (service) =>
-        service.type === serviceType && service.distance <= maxDistance
+        service.type === serviceType && service.distance <= maxDistance,
     )
     .sort((a, b) => a.distance - b.distance);
 }

@@ -96,7 +96,10 @@ export default function SignIn() {
           <form onSubmit={handleSubmit} className="space-y-5">
             {/* Email */}
             <div className="space-y-2">
-              <label htmlFor="email" className="text-sm font-medium text-foreground">
+              <label
+                htmlFor="email"
+                className="text-sm font-medium text-foreground"
+              >
                 Email Address
               </label>
               <div className="relative">
@@ -117,7 +120,10 @@ export default function SignIn() {
             {/* Password */}
             <div className="space-y-2">
               <div className="flex items-center justify-between">
-                <label htmlFor="password" className="text-sm font-medium text-foreground">
+                <label
+                  htmlFor="password"
+                  className="text-sm font-medium text-foreground"
+                >
                   Password
                 </label>
                 <Link
@@ -170,7 +176,9 @@ export default function SignIn() {
               <div className="w-full border-t border-border/50"></div>
             </div>
             <div className="relative flex justify-center text-sm">
-              <span className="px-2 bg-card text-foreground/50">Or continue as</span>
+              <span className="px-2 bg-card text-foreground/50">
+                Or continue as
+              </span>
             </div>
           </div>
 
@@ -188,7 +196,10 @@ export default function SignIn() {
           <div className="mt-6 text-center">
             <p className="text-foreground/70">
               Don't have an account?{" "}
-              <Link to="/signup" className="text-primary hover:text-primary/80 font-semibold">
+              <Link
+                to="/signup"
+                className="text-primary hover:text-primary/80 font-semibold"
+              >
                 Create one
               </Link>
             </p>

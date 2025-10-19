@@ -1,11 +1,24 @@
 import { RequestHandler } from "express";
 import { ClothingItem } from "../models/index";
-import { calculateEcoScore, getEcoCertifications, getEcoScoreDescription } from "../services/ecoScoreService";
+import {
+  calculateEcoScore,
+  getEcoCertifications,
+  getEcoScoreDescription,
+} from "../services/ecoScoreService";
 
 // Upload clothing item
 export const uploadClothingItem: RequestHandler = async (req, res) => {
   try {
-    const { userId, title, category, color, brand, material, description, imageUrl } = req.body;
+    const {
+      userId,
+      title,
+      category,
+      color,
+      brand,
+      material,
+      description,
+      imageUrl,
+    } = req.body;
 
     if (!userId || !title || !category) {
       res.status(400).json({
@@ -15,7 +28,14 @@ export const uploadClothingItem: RequestHandler = async (req, res) => {
     }
 
     // Validate category
-    const validCategories = ["tops", "bottoms", "dresses", "shoes", "accessories", "outerwear"];
+    const validCategories = [
+      "tops",
+      "bottoms",
+      "dresses",
+      "shoes",
+      "accessories",
+      "outerwear",
+    ];
     if (!validCategories.includes(category)) {
       res.status(400).json({
         error: `Invalid category. Must be one of: ${validCategories.join(", ")}`,
@@ -24,7 +44,9 @@ export const uploadClothingItem: RequestHandler = async (req, res) => {
     }
 
     // Generate image URL
-    const finalImageUrl = imageUrl || `https://via.placeholder.com/300?text=${encodeURIComponent(title)}`;
+    const finalImageUrl =
+      imageUrl ||
+      `https://via.placeholder.com/300?text=${encodeURIComponent(title)}`;
 
     // Calculate eco score
     const ecoScoreData = calculateEcoScore({
@@ -49,7 +71,11 @@ export const uploadClothingItem: RequestHandler = async (req, res) => {
         notes: getEcoScoreDescription(ecoScoreData.score),
       },
       usageFrequency: 50,
-      tags: [category, ...(Array.isArray(color) ? color : color ? [color] : []), ...(Array.isArray(material) ? material : material ? [material] : [])],
+      tags: [
+        category,
+        ...(Array.isArray(color) ? color : color ? [color] : []),
+        ...(Array.isArray(material) ? material : material ? [material] : []),
+      ],
     });
 
     await item.save();

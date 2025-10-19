@@ -112,7 +112,9 @@ export default function SignUp() {
         {/* Card */}
         <div className="bg-card border border-border/50 rounded-2xl p-8 shadow-lg">
           <div className="space-y-2 mb-8">
-            <h1 className="text-2xl font-bold text-foreground">Create Account</h1>
+            <h1 className="text-2xl font-bold text-foreground">
+              Create Account
+            </h1>
             <p className="text-foreground/70">
               Join our sustainable fashion community
             </p>
@@ -121,7 +123,10 @@ export default function SignUp() {
           <form onSubmit={handleSubmit} className="space-y-5">
             {/* Name */}
             <div className="space-y-2">
-              <label htmlFor="name" className="text-sm font-medium text-foreground">
+              <label
+                htmlFor="name"
+                className="text-sm font-medium text-foreground"
+              >
                 Full Name
               </label>
               <div className="relative">
@@ -141,7 +146,10 @@ export default function SignUp() {
 
             {/* Email */}
             <div className="space-y-2">
-              <label htmlFor="email" className="text-sm font-medium text-foreground">
+              <label
+                htmlFor="email"
+                className="text-sm font-medium text-foreground"
+              >
                 Email Address
               </label>
               <div className="relative">
@@ -161,7 +169,10 @@ export default function SignUp() {
 
             {/* Password */}
             <div className="space-y-2">
-              <label htmlFor="password" className="text-sm font-medium text-foreground">
+              <label
+                htmlFor="password"
+                className="text-sm font-medium text-foreground"
+              >
                 Password
               </label>
               <div className="relative">
@@ -196,7 +207,10 @@ export default function SignUp() {
 
             {/* Confirm Password */}
             <div className="space-y-2">
-              <label htmlFor="confirmPassword" className="text-sm font-medium text-foreground">
+              <label
+                htmlFor="confirmPassword"
+                className="text-sm font-medium text-foreground"
+              >
                 Confirm Password
               </label>
               <div className="relative">
@@ -264,7 +278,10 @@ export default function SignUp() {
           <div className="mt-6 text-center">
             <p className="text-foreground/70">
               Already have an account?{" "}
-              <Link to="/signin" className="text-primary hover:text-primary/80 font-semibold">
+              <Link
+                to="/signin"
+                className="text-primary hover:text-primary/80 font-semibold"
+              >
                 Sign In
               </Link>
             </p>

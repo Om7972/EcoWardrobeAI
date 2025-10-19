@@ -42,7 +42,7 @@ export const getRepairHistory: RequestHandler = async (req, res) => {
 
     const repairLogs = generateRepairLog(
       String(garmentId) || "default",
-      String(garmentName)
+      String(garmentName),
     );
 
     res.json({
@@ -62,7 +62,7 @@ export const getNearbyServices: RequestHandler = async (req, res) => {
 
     const services = searchNearbyServices(
       String(serviceType) || "tailor",
-      maxDistance ? parseInt(String(maxDistance)) : 5
+      maxDistance ? parseInt(String(maxDistance)) : 5,
     );
 
     res.json({
@@ -81,7 +81,7 @@ export const getAllServices: RequestHandler = async (req, res) => {
     const { type } = req.query;
 
     const services = getLocalServices(
-      type as "tailor" | "cobbler" | "cleaner" | "leather-repair" | undefined
+      type as "tailor" | "cobbler" | "cleaner" | "leather-repair" | undefined,
     );
 
     res.json({

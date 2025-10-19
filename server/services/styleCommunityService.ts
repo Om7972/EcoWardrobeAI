@@ -276,7 +276,7 @@ export function createPost(
   circleId: string,
   userId: string,
   content: string,
-  type: "outfit" | "swap" | "discussion" | "challenge"
+  type: "outfit" | "swap" | "discussion" | "challenge",
 ): CommunityPost {
   return {
     id: `post-${Date.now()}`,

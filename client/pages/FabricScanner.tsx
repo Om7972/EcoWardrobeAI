@@ -1,6 +1,15 @@
 import { useState } from "react";
 import Layout from "@/components/Layout";
-import { Upload, Zap, AlertCircle, CheckCircle2, Image as ImageIcon, Leaf, Droplet, Flame } from "lucide-react";
+import {
+  Upload,
+  Zap,
+  AlertCircle,
+  CheckCircle2,
+  Image as ImageIcon,
+  Leaf,
+  Droplet,
+  Flame,
+} from "lucide-react";
 import { toast } from "sonner";
 
 interface FabricAnalysis {
@@ -48,7 +57,7 @@ const fabricDatabase: Record<string, FabricAnalysis> = {
     ],
     icon: "🌾",
   },
-  "polyester": {
+  polyester: {
     fabricType: "⚠️ Polyester",
     sustainability: {
       score: 45,
@@ -72,7 +81,7 @@ const fabricDatabase: Record<string, FabricAnalysis> = {
     ],
     icon: "♻️",
   },
-  "linen": {
+  linen: {
     fabricType: "🌿 Linen",
     sustainability: {
       score: 88,
@@ -96,7 +105,7 @@ const fabricDatabase: Record<string, FabricAnalysis> = {
     ],
     icon: "👕",
   },
-  "wool": {
+  wool: {
     fabricType: "🧶 Wool",
     sustainability: {
       score: 85,
@@ -120,7 +129,7 @@ const fabricDatabase: Record<string, FabricAnalysis> = {
     ],
     icon: "🐑",
   },
-  "silk": {
+  silk: {
     fabricType: "✨ Silk",
     sustainability: {
       score: 78,
@@ -173,7 +182,9 @@ const fabricDatabase: Record<string, FabricAnalysis> = {
 export default function FabricScanner() {
   const [dragActive, setDragActive] = useState(false);
   const [uploadedImage, setUploadedImage] = useState<string | null>(null);
-  const [detectedFabric, setDetectedFabric] = useState<FabricAnalysis | null>(null);
+  const [detectedFabric, setDetectedFabric] = useState<FabricAnalysis | null>(
+    null,
+  );
   const [loading, setLoading] = useState(false);
   const [manualInput, setManualInput] = useState("");
 
@@ -237,15 +248,15 @@ export default function FabricScanner() {
     }
 
     const lowerInput = manualInput.toLowerCase();
-    const matches = Object.keys(fabricDatabase).filter((fabric) =>
-      fabric.includes(lowerInput) || lowerInput.includes(fabric)
+    const matches = Object.keys(fabricDatabase).filter(
+      (fabric) => fabric.includes(lowerInput) || lowerInput.includes(fabric),
     );
 
     if (matches.length > 0) {
       setDetectedFabric(fabricDatabase[matches[0]]);
     } else {
       toast.error(
-        `Fabric "${manualInput}" not in database. Try: organic cotton, polyester, linen, wool, silk, or recycled polyester`
+        `Fabric "${manualInput}" not in database. Try: organic cotton, polyester, linen, wool, silk, or recycled polyester`,
       );
     }
   };
@@ -278,7 +289,8 @@ export default function FabricScanner() {
               </h1>
             </div>
             <p className="text-lg text-foreground/70 max-w-2xl">
-              Upload a clothing tag or receipt. AI detects fabric type and rates sustainability impact
+              Upload a clothing tag or receipt. AI detects fabric type and rates
+              sustainability impact
             </p>
           </div>
         </div>
@@ -406,7 +418,7 @@ export default function FabricScanner() {
                           </span>
                           <span
                             className={`px-4 py-2 rounded-full font-semibold text-sm border ${getSustainabilityColor(
-                              detectedFabric.sustainability.rating
+                              detectedFabric.sustainability.rating,
                             )}`}
                           >
                             {detectedFabric.sustainability.rating.toUpperCase()}
@@ -433,7 +445,9 @@ export default function FabricScanner() {
                       <div className="p-4 bg-blue-50/50 border border-blue-200/50 rounded-lg space-y-2">
                         <div className="flex items-center gap-2">
                           <Droplet className="w-5 h-5 text-blue-600" />
-                          <p className="font-semibold text-blue-900">Water Use</p>
+                          <p className="font-semibold text-blue-900">
+                            Water Use
+                          </p>
                         </div>
                         <p className="text-sm text-blue-800">
                           {detectedFabric.impacts.water}
@@ -443,7 +457,9 @@ export default function FabricScanner() {
                       <div className="p-4 bg-orange-50/50 border border-orange-200/50 rounded-lg space-y-2">
                         <div className="flex items-center gap-2">
                           <Flame className="w-5 h-5 text-orange-600" />
-                          <p className="font-semibold text-orange-900">Carbon</p>
+                          <p className="font-semibold text-orange-900">
+                            Carbon
+                          </p>
                         </div>
                         <p className="text-sm text-orange-800">
                           {detectedFabric.impacts.carbon}
@@ -453,7 +469,9 @@ export default function FabricScanner() {
                       <div className="p-4 bg-red-50/50 border border-red-200/50 rounded-lg space-y-2">
                         <div className="flex items-center gap-2">
                           <AlertCircle className="w-5 h-5 text-red-600" />
-                          <p className="font-semibold text-red-900">Chemicals</p>
+                          <p className="font-semibold text-red-900">
+                            Chemicals
+                          </p>
                         </div>
                         <p className="text-sm text-red-800">
                           {detectedFabric.impacts.chemicals}

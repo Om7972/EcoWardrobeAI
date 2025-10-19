@@ -11,6 +11,7 @@ import * as marketplaceRoutes from "./routes/marketplace";
 import * as styleCoachRoutes from "./routes/styleCoach";
 import * as featureRoutes from "./routes/features";
 import * as careRepairRoutes from "./routes/careRepair";
+import * as communityRoutes from "./routes/community";
 
 let dbConnected = false;
 

@@ -11,6 +11,7 @@ import VirtualCloset from "./pages/VirtualCloset";
 import OutfitGenerator from "./pages/OutfitGenerator";
 import Sustainability from "./pages/Sustainability";
 import ThriftSwap from "./pages/ThriftSwap";
+import CareRepairHub from "./pages/CareRepairHub";
 import GarmentDetail from "./pages/GarmentDetail";
 import NotFound from "./pages/NotFound";
 

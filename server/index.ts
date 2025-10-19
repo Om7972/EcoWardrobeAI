@@ -95,5 +95,11 @@ export async function createServer(): Promise<Express> {
   app.get("/api/features/maintenance-report", featureRoutes.getMaintenanceReport);
   app.get("/api/features/weather-forecast", featureRoutes.getWeatherForecast);
 
+  // Care & Repair routes
+  app.get("/api/care/instructions", careRepairRoutes.getCareInstructions);
+  app.get("/api/care/repair-history", careRepairRoutes.getRepairHistory);
+  app.get("/api/care/nearby-services", careRepairRoutes.getNearbyServices);
+  app.get("/api/care/all-services", careRepairRoutes.getAllServices);
+
   return app;
 }

@@ -10,6 +10,7 @@ import * as userRoutes from "./routes/users";
 import * as marketplaceRoutes from "./routes/marketplace";
 import * as styleCoachRoutes from "./routes/styleCoach";
 import * as featureRoutes from "./routes/features";
+import * as careRepairRoutes from "./routes/careRepair";
 
 let dbConnected = false;
 

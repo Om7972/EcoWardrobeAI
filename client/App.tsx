@@ -13,6 +13,7 @@ import Sustainability from "./pages/Sustainability";
 import ThriftSwap from "./pages/ThriftSwap";
 import CareRepairHub from "./pages/CareRepairHub";
 import FabricScanner from "./pages/FabricScanner";
+import StyleCircles from "./pages/StyleCircles";
 import GarmentDetail from "./pages/GarmentDetail";
 import NotFound from "./pages/NotFound";
 

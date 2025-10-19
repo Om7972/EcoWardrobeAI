@@ -102,5 +102,13 @@ export async function createServer(): Promise<Express> {
   app.get("/api/care/nearby-services", careRepairRoutes.getNearbyServices);
   app.get("/api/care/all-services", careRepairRoutes.getAllServices);
 
+  // Community/Style Circles routes
+  app.get("/api/community/circles", communityRoutes.getCircles);
+  app.get("/api/community/circles/:circleId", communityRoutes.getCircleById);
+  app.get("/api/community/circles/:circleId/feed", communityRoutes.getCircleFeed);
+  app.get("/api/community/feed", communityRoutes.getCommunityFeed);
+  app.get("/api/community/badges", communityRoutes.getAvailableBadges);
+  app.get("/api/community/users/:userId/badges", communityRoutes.getUserBadgesHandler);
+
   return app;
 }

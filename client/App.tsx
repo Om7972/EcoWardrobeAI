@@ -33,6 +33,7 @@ export default function App() {
             <Route path="/outfit-generator" element={<OutfitGenerator />} />
             <Route path="/sustainability" element={<Sustainability />} />
             <Route path="/thrift-swap" element={<ThriftSwap />} />
+            <Route path="/care-repair" element={<CareRepairHub />} />
             <Route path="/garment/:id" element={<GarmentDetail />} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />

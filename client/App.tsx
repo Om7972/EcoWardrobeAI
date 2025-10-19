@@ -25,6 +25,8 @@ export default function App() {
         <BrowserRouter>
           <Routes>
             <Route path="/" element={<Index />} />
+            <Route path="/signup" element={<SignUp />} />
+            <Route path="/signin" element={<SignIn />} />
             <Route path="/dashboard" element={<Dashboard />} />
             <Route path="/closet" element={<VirtualCloset />} />
             <Route path="/outfit-generator" element={<OutfitGenerator />} />

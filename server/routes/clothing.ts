@@ -5,7 +5,7 @@ import { calculateEcoScore, getEcoCertifications, getEcoScoreDescription } from 
 // Upload clothing item
 export const uploadClothingItem: RequestHandler = async (req, res) => {
   try {
-    const { userId, title, category, color, brand, material, description } = req.body;
+    const { userId, title, category, color, brand, material, description, imageUrl } = req.body;
 
     if (!userId || !title || !category) {
       res.status(400).json({
@@ -14,8 +14,17 @@ export const uploadClothingItem: RequestHandler = async (req, res) => {
       return;
     }
 
-    // Mock image URL for demo (in production, use actual file upload)
-    const imageUrl = req.body.imageUrl || `https://via.placeholder.com/300?text=${encodeURIComponent(title)}`;
+    // Validate category
+    const validCategories = ["tops", "bottoms", "dresses", "shoes", "accessories", "outerwear"];
+    if (!validCategories.includes(category)) {
+      res.status(400).json({
+        error: `Invalid category. Must be one of: ${validCategories.join(", ")}`,
+      });
+      return;
+    }
+
+    // Generate image URL
+    const finalImageUrl = imageUrl || `https://via.placeholder.com/300?text=${encodeURIComponent(title)}`;
 
     // Calculate eco score
     const ecoScoreData = calculateEcoScore({
@@ -26,13 +35,13 @@ export const uploadClothingItem: RequestHandler = async (req, res) => {
 
     const item = new ClothingItem({
       userId,
-      title,
-      description,
-      imageUrl,
+      title: title.trim(),
+      description: description?.trim() || "",
+      imageUrl: finalImageUrl,
       category,
-      color: color || [],
-      brand,
-      material: material || [],
+      color: Array.isArray(color) ? color : color ? [color] : [],
+      brand: brand?.trim() || null,
+      material: Array.isArray(material) ? material : material ? [material] : [],
       ecoScore: ecoScoreData.score,
       sustainability: {
         rating: Math.ceil(ecoScoreData.score / 20),
@@ -40,17 +49,28 @@ export const uploadClothingItem: RequestHandler = async (req, res) => {
         notes: getEcoScoreDescription(ecoScoreData.score),
       },
       usageFrequency: 50,
-      tags: [category, ...(color || []), ...(material || [])],
+      tags: [category, ...(Array.isArray(color) ? color : color ? [color] : []), ...(Array.isArray(material) ? material : material ? [material] : [])],
     });
 
     await item.save();
 
     res.status(201).json({
       success: true,
+      message: "Item added to closet successfully",
       data: item,
     });
-  } catch (error) {
+  } catch (error: any) {
     console.error("Upload error:", error);
+
+    // Handle specific validation errors
+    if (error.name === "ValidationError") {
+      const messages = Object.values(error.errors)
+        .map((e: any) => e.message)
+        .join(", ");
+      res.status(400).json({ error: messages });
+      return;
+    }
+
     res.status(500).json({ error: "Failed to upload clothing item" });
   }
 };

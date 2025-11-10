@@ -1,96 +1,229 @@
 import { RequestHandler } from "express";
-import {
-  getCareLabel,
-  generateRepairLog,
-  searchNearbyServices,
-  getLocalServices,
-} from "../services/careRepairService";
+import { CareInstruction } from "../models/CareInstruction";
+import { RepairLog } from "../models/RepairLog";
+import { ServiceProvider } from "../models/ServiceProvider";
 
+// Get care instructions for a clothing item
 export const getCareInstructions: RequestHandler = async (req, res) => {
   try {
-    const { fabricType } = req.query;
-
-    if (!fabricType) {
-      res.status(400).json({
-        error: "fabricType is required",
-      });
-      return;
+    const { itemId } = req.params;
+    
+    const instructions = await CareInstruction.findOne({ clothingItemId: itemId });
+    
+    if (!instructions) {
+      return res.status(404).json({ error: "Care instructions not found" });
     }
-
-    const careLabel = getCareLabel(String(fabricType));
-
+    
     res.json({
       success: true,
-      data: careLabel,
+      data: instructions,
     });
   } catch (error) {
-    console.error("Care instructions error:", error);
+    console.error("Fetch care instructions error:", error);
     res.status(500).json({ error: "Failed to fetch care instructions" });
   }
 };
 
-export const getRepairHistory: RequestHandler = async (req, res) => {
+// Create or update care instructions for a clothing item
+export const upsertCareInstructions: RequestHandler = async (req, res) => {
   try {
-    const { garmentId, garmentName } = req.query;
-
-    if (!garmentName) {
-      res.status(400).json({
-        error: "garmentName is required",
-      });
-      return;
-    }
-
-    const repairLogs = generateRepairLog(
-      String(garmentId) || "default",
-      String(garmentName),
+    const { itemId } = req.params;
+    const { fabricType, washingInstructions, dryingInstructions, ironingInstructions, specialCareNotes } = req.body;
+    
+    const instructions = await CareInstruction.findOneAndUpdate(
+      { clothingItemId: itemId },
+      { 
+        clothingItemId: itemId,
+        fabricType,
+        washingInstructions,
+        dryingInstructions,
+        ironingInstructions,
+        specialCareNotes
+      },
+      { new: true, upsert: true }
     );
-
+    
     res.json({
       success: true,
-      count: repairLogs.length,
+      data: instructions,
+    });
+  } catch (error) {
+    console.error("Upsert care instructions error:", error);
+    res.status(500).json({ error: "Failed to save care instructions" });
+  }
+};
+
+// Get repair history for a user's clothing item
+export const getRepairHistory: RequestHandler = async (req, res) => {
+  try {
+    const { userId, itemId } = req.params;
+    
+    const repairLogs = await RepairLog.find({ 
+      userId,
+      clothingItemId: itemId 
+    }).sort({ date: -1 });
+    
+    res.json({
+      success: true,
       data: repairLogs,
     });
   } catch (error) {
-    console.error("Repair history error:", error);
+    console.error("Fetch repair history error:", error);
     res.status(500).json({ error: "Failed to fetch repair history" });
   }
 };
 
-export const getNearbyServices: RequestHandler = async (req, res) => {
+// Add a repair log entry
+export const addRepairLog: RequestHandler = async (req, res) => {
   try {
-    const { serviceType, maxDistance } = req.query;
-
-    const services = searchNearbyServices(
-      String(serviceType) || "tailor",
-      maxDistance ? parseInt(String(maxDistance)) : 5,
-    );
-
-    res.json({
+    const { userId } = req.params;
+    const { clothingItemId, repairType, description, date, cost, serviceProvider, notes } = req.body;
+    
+    const repairLog = new RepairLog({
+      userId,
+      clothingItemId,
+      repairType,
+      description,
+      date: new Date(date),
+      cost,
+      serviceProvider,
+      notes,
+    });
+    
+    await repairLog.save();
+    
+    res.status(201).json({
       success: true,
-      count: services.length,
-      data: services,
+      data: repairLog,
     });
   } catch (error) {
-    console.error("Nearby services error:", error);
+    console.error("Add repair log error:", error);
+    res.status(500).json({ error: "Failed to add repair log" });
+  }
+};
+
+// Update a repair log entry
+export const updateRepairLog: RequestHandler = async (req, res) => {
+  try {
+    const { logId } = req.params;
+    const updateData = req.body;
+    
+    const repairLog = await RepairLog.findByIdAndUpdate(
+      logId,
+      updateData,
+      { new: true }
+    );
+    
+    if (!repairLog) {
+      return res.status(404).json({ error: "Repair log not found" });
+    }
+    
+    res.json({
+      success: true,
+      data: repairLog,
+    });
+  } catch (error) {
+    console.error("Update repair log error:", error);
+    res.status(500).json({ error: "Failed to update repair log" });
+  }
+};
+
+// Delete a repair log entry
+export const deleteRepairLog: RequestHandler = async (req, res) => {
+  try {
+    const { logId } = req.params;
+    
+    const repairLog = await RepairLog.findByIdAndDelete(logId);
+    
+    if (!repairLog) {
+      return res.status(404).json({ error: "Repair log not found" });
+    }
+    
+    res.json({
+      success: true,
+      message: "Repair log deleted successfully",
+    });
+  } catch (error) {
+    console.error("Delete repair log error:", error);
+    res.status(500).json({ error: "Failed to delete repair log" });
+  }
+};
+
+// Get nearby service providers
+export const getNearbyServices: RequestHandler = async (req, res) => {
+  try {
+    const { latitude, longitude, type, radius = "10" } = req.query;
+    
+    // Convert to numbers
+    const lat = parseFloat(latitude as string);
+    const lng = parseFloat(longitude as string);
+    const rad = parseFloat(radius as string);
+    
+    // Validate coordinates
+    if (isNaN(lat) || isNaN(lng)) {
+      return res.status(400).json({ error: "Valid latitude and longitude are required" });
+    }
+    
+    // Find service providers within radius (simplified calculation)
+    const serviceProviders = await ServiceProvider.find({
+      latitude: { $gte: lat - (rad / 111), $lte: lat + (rad / 111) },
+      longitude: { $gte: lng - (rad / (111 * Math.cos(lat * Math.PI / 180))), $lte: lng + (rad / (111 * Math.cos(lat * Math.PI / 180))) },
+      ...(type && { type }),
+    }).limit(20);
+    
+    res.json({
+      success: true,
+      data: serviceProviders,
+    });
+  } catch (error) {
+    console.error("Fetch nearby services error:", error);
+    res.status(500).json({ error: "Failed to fetch nearby services" });
+  }
+};
+
+// Get all service providers
+export const getAllServices: RequestHandler = async (req, res) => {
+  try {
+    const { type } = req.query;
+    
+    const serviceProviders = await ServiceProvider.find(
+      type ? { type } : {}
+    ).limit(100);
+    
+    res.json({
+      success: true,
+      data: serviceProviders,
+    });
+  } catch (error) {
+    console.error("Fetch all services error:", error);
     res.status(500).json({ error: "Failed to fetch services" });
   }
 };
 
-export const getAllServices: RequestHandler = async (req, res) => {
+// Add a new service provider
+export const addServiceProvider: RequestHandler = async (req, res) => {
   try {
-    const { type } = req.query;
-
-    const services = getLocalServices(
-      type as "tailor" | "cobbler" | "cleaner" | "leather-repair" | undefined,
-    );
-
-    res.json({
+    const { name, type, address, latitude, longitude, phone, website, specialties } = req.body;
+    
+    const serviceProvider = new ServiceProvider({
+      name,
+      type,
+      address,
+      latitude,
+      longitude,
+      phone,
+      website,
+      specialties,
+    });
+    
+    await serviceProvider.save();
+    
+    res.status(201).json({
       success: true,
-      count: services.length,
-      data: services,
+      data: serviceProvider,
     });
   } catch (error) {
-    console.error("All services error:", error);
-    res.status(500).json({ error: "Failed to fetch services" });
+    console.error("Add service provider error:", error);
+    res.status(500).json({ error: "Failed to add service provider" });
   }
 };

@@ -1,12 +1,11 @@
 import mongoose from "mongoose";
 
 interface ISwapRequest {
-  listingId: string;
   fromUserId: string;
   toUserId: string;
-  offeredItemId: string;
-  desiredItemId: string;
-  message?: string;
+  fromListingId: string;
+  toListingId?: string;
+  message: string;
   status: "pending" | "accepted" | "rejected" | "completed";
   createdAt: Date;
   updatedAt: Date;
@@ -14,24 +13,21 @@ interface ISwapRequest {
 
 const swapRequestSchema = new mongoose.Schema<ISwapRequest>(
   {
-    listingId: { type: String, required: true, index: true },
     fromUserId: { type: String, required: true, index: true },
     toUserId: { type: String, required: true, index: true },
-    offeredItemId: { type: String, required: true },
-    desiredItemId: { type: String, required: true },
-    message: String,
-    status: {
-      type: String,
+    fromListingId: { type: String, required: true, index: true },
+    toListingId: { type: String, index: true },
+    message: { type: String, required: true },
+    status: { 
+      type: String, 
       enum: ["pending", "accepted", "rejected", "completed"],
-      default: "pending",
-      index: true,
+      default: "pending"
     },
   },
   { timestamps: true }
 );
 
-export const SwapRequest =
-  mongoose.models.SwapRequest ||
-  mongoose.model<ISwapRequest>("SwapRequest", swapRequestSchema);
+const SwapRequestModel = mongoose.model<ISwapRequest>("SwapRequest", swapRequestSchema);
 
+export { SwapRequestModel as SwapRequest };
 export type { ISwapRequest };

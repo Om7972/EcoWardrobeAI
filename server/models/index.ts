@@ -1,5 +1,12 @@
-export { ClothingItem, type IClothingItem } from "./ClothingItem";
-export { Outfit, type IOutfit } from "./Outfit";
-export { User, type IUser } from "./User";
-export { SwapListing, type ISwapListing } from "./SwapListing";
-export { SwapRequest, type ISwapRequest } from "./SwapRequest";
+export * from "./ClothingItem";
+export * from "./Outfit";
+export * from "./User";
+export * from "./CareInstruction";
+export * from "./RepairLog";
+export * from "./ServiceProvider";
+export * from "./MarketplaceListing";
+export * from "./SwapRequest";
+export * from "./Moodboard";
+export * from "./Capsule";
+export * from "./FabricAnalysis";
+export * from "./StyleCircle";

@@ -14,8 +14,17 @@ import ThriftSwap from "./pages/ThriftSwap";
 import CareRepairHub from "./pages/CareRepairHub";
 import FabricScanner from "./pages/FabricScanner";
 import StyleCircles from "./pages/StyleCircles";
+import ClosetCapsule from "./pages/ClosetCapsule";
 import GarmentDetail from "./pages/GarmentDetail";
 import NotFound from "./pages/NotFound";
+import ProtectedRoute from "./components/ProtectedRoute";
+import GreenActionHub from "./pages/GreenActionHub";
+import AIClimateAssistant from "./pages/AIClimateAssistant";
+import EcoMarketplace from "./pages/EcoMarketplace";
+import ImpactTracker from "./pages/ImpactTracker";
+import EcoStore from "./pages/EcoStore";
+import Community from "./pages/Community";
+import AIServices from "./pages/AIServices";
 
 const queryClient = new QueryClient();
 
@@ -30,15 +39,91 @@ export default function App() {
             <Route path="/" element={<Index />} />
             <Route path="/signup" element={<SignUp />} />
             <Route path="/signin" element={<SignIn />} />
-            <Route path="/dashboard" element={<Dashboard />} />
-            <Route path="/closet" element={<VirtualCloset />} />
-            <Route path="/outfit-generator" element={<OutfitGenerator />} />
-            <Route path="/sustainability" element={<Sustainability />} />
-            <Route path="/thrift-swap" element={<ThriftSwap />} />
-            <Route path="/care-repair" element={<CareRepairHub />} />
-            <Route path="/fabric-scanner" element={<FabricScanner />} />
-            <Route path="/style-circles" element={<StyleCircles />} />
-            <Route path="/garment/:id" element={<GarmentDetail />} />
+            <Route path="/dashboard" element={
+              <ProtectedRoute>
+                <Dashboard />
+              </ProtectedRoute>
+            } />
+            <Route path="/closet" element={
+              <ProtectedRoute>
+                <VirtualCloset />
+              </ProtectedRoute>
+            } />
+            <Route path="/outfit-generator" element={
+              <ProtectedRoute>
+                <OutfitGenerator />
+              </ProtectedRoute>
+            } />
+            <Route path="/sustainability" element={
+              <ProtectedRoute>
+                <Sustainability />
+              </ProtectedRoute>
+            } />
+            <Route path="/thrift-swap" element={
+              <ProtectedRoute>
+                <ThriftSwap />
+              </ProtectedRoute>
+            } />
+            <Route path="/care-repair" element={
+              <ProtectedRoute>
+                <CareRepairHub />
+              </ProtectedRoute>
+            } />
+            <Route path="/fabric-scanner" element={
+              <ProtectedRoute>
+                <FabricScanner />
+              </ProtectedRoute>
+            } />
+            <Route path="/style-circles" element={
+              <ProtectedRoute>
+                <StyleCircles />
+              </ProtectedRoute>
+            } />
+            <Route path="/closet-capsule" element={
+              <ProtectedRoute>
+                <ClosetCapsule />
+              </ProtectedRoute>
+            } />
+            <Route path="/garment/:id" element={
+              <ProtectedRoute>
+                <GarmentDetail />
+              </ProtectedRoute>
+            } />
+            <Route path="/green-action-hub" element={
+              <ProtectedRoute>
+                <GreenActionHub />
+              </ProtectedRoute>
+            } />
+            <Route path="/ai-climate-assistant" element={
+              <ProtectedRoute>
+                <AIClimateAssistant />
+              </ProtectedRoute>
+            } />
+            <Route path="/eco-marketplace" element={
+              <ProtectedRoute>
+                <EcoMarketplace />
+              </ProtectedRoute>
+            } />
+            <Route path="/impact-tracker" element={
+              <ProtectedRoute>
+                <ImpactTracker />
+              </ProtectedRoute>
+            } />
+            <Route path="/eco-store" element={
+              <ProtectedRoute>
+                <EcoStore />
+              </ProtectedRoute>
+            } />
+            <Route path="/community" element={
+              <ProtectedRoute>
+                <Community />
+              </ProtectedRoute>
+            } />
+            <Route path="/ai-services" element={
+              <ProtectedRoute>
+                <AIServices />
+              </ProtectedRoute>
+            } />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
           </Routes>

@@ -1,569 +1,575 @@
-import { useState } from "react";
-import Layout from "@/components/Layout";
-import {
-  Upload,
-  Zap,
-  AlertCircle,
-  CheckCircle2,
-  Image as ImageIcon,
-  Leaf,
-  Droplet,
-  Flame,
+import { useState, useRef, useEffect } from "react";
+import { 
+  Scan, 
+  Upload, 
+  Camera, 
+  Leaf, 
+  AlertTriangle, 
+  CheckCircle, 
+  Info,
+  RotateCcw,
+  Download,
+  Share2
 } from "lucide-react";
 import { toast } from "sonner";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Badge } from "@/components/ui/badge";
+import { Separator } from "@/components/ui/separator";
+import { 
+  Dialog, 
+  DialogContent, 
+  DialogDescription, 
+  DialogFooter, 
+  DialogHeader, 
+  DialogTitle, 
+  DialogTrigger 
+} from "@/components/ui/dialog";
+import { useAuth } from "@/hooks/useAuth";
 
-interface FabricAnalysis {
-  fabricType: string;
-  sustainability: {
-    score: number;
-    rating: "excellent" | "good" | "moderate" | "poor";
-  };
-  properties: {
-    durability: string;
-    breathability: string;
-    care: string;
-  };
-  impacts: {
-    water: string;
-    carbon: string;
-    chemicals: string;
-  };
-  recommendations: string[];
-  icon: string;
+interface FabricComponent {
+  material: string;
+  percentage: number;
+  sustainabilityScore: number;
+  environmentalImpact: "low" | "medium" | "high";
 }
 
-const fabricDatabase: Record<string, FabricAnalysis> = {
-  "organic cotton": {
-    fabricType: "🌿 Organic Cotton",
-    sustainability: {
-      score: 92,
-      rating: "excellent",
-    },
-    properties: {
-      durability: "High - Lasts 5+ years with proper care",
-      breathability: "Excellent - Natural fiber comfort",
-      care: "Machine wash, air dry recommended",
-    },
-    impacts: {
-      water: "Minimal - Grown without excessive irrigation",
-      carbon: "Low - No synthetic pesticides",
-      chemicals: "None - Certified organic process",
-    },
-    recommendations: [
-      "Excellent sustainability choice",
-      "Versatile for all seasons",
-      "Invest in quality pieces - worth the cost",
-      "Store with care to maximize lifespan",
-    ],
-    icon: "🌾",
-  },
-  polyester: {
-    fabricType: "⚠️ Polyester",
-    sustainability: {
-      score: 45,
-      rating: "moderate",
-    },
-    properties: {
-      durability: "Very High - Lasts 10+ years",
-      breathability: "Poor - Synthetic material",
-      care: "Machine wash, tumble dry safe",
-    },
-    impacts: {
-      water: "Moderate - Uses water in production",
-      carbon: "High - Petroleum-based plastic",
-      chemicals: "Moderate - Synthetic dyes used",
-    },
-    recommendations: [
-      "Look for recycled polyester alternatives",
-      "Choose blends with natural fibers",
-      "Maximize garment lifespan to offset impact",
-      "Consider bio-based alternatives like mylo or lab-grown leather",
-    ],
-    icon: "♻️",
-  },
-  linen: {
-    fabricType: "🌿 Linen",
-    sustainability: {
-      score: 88,
-      rating: "excellent",
-    },
-    properties: {
-      durability: "Very High - Improves with age",
-      breathability: "Excellent - Best for hot weather",
-      care: "Hand wash, air dry recommended",
-    },
-    impacts: {
-      water: "Low - Minimal water required",
-      carbon: "Low - Flax plant cultivation",
-      chemicals: "Minimal - Few pesticides needed",
-    },
-    recommendations: [
-      "Premium sustainable choice",
-      "Perfect for summer clothing",
-      "Natural wrinkles add character",
-      "Becomes softer with each wash",
-    ],
-    icon: "👕",
-  },
-  wool: {
-    fabricType: "🧶 Wool",
-    sustainability: {
-      score: 85,
-      rating: "excellent",
-    },
-    properties: {
-      durability: "Very High - Lasts 10+ years",
-      breathability: "Good - Natural temperature regulation",
-      care: "Hand wash, lay flat dry",
-    },
-    impacts: {
-      water: "Moderate - Sheep grazing systems",
-      carbon: "Moderate - Animal farming impact",
-      chemicals: "Variable - Depends on processing",
-    },
-    recommendations: [
-      "Choose ethical sourcing (RWS certified)",
-      "Excellent insulation properties",
-      "Invest in quality for longevity",
-      "Check for mulesing-free certification",
-    ],
-    icon: "🐑",
-  },
-  silk: {
-    fabricType: "✨ Silk",
-    sustainability: {
-      score: 78,
-      rating: "good",
-    },
-    properties: {
-      durability: "High - Lasts 5+ years",
-      breathability: "Excellent - Luxurious drape",
-      care: "Hand wash, dry cleaning recommended",
-    },
-    impacts: {
-      water: "Moderate - Sericulture water use",
-      carbon: "Low - Natural protein fiber",
-      chemicals: "Varies - Dye processing impact",
-    },
-    recommendations: [
-      "Luxury sustainable choice",
-      "Support ethical sericulture",
-      "Perfect for special occasions",
-      "Requires gentle care for longevity",
-    ],
-    icon: "🎀",
-  },
-  "recycled polyester": {
-    fabricType: "♻️ Recycled Polyester",
-    sustainability: {
-      score: 72,
-      rating: "good",
-    },
-    properties: {
-      durability: "Very High - Lasts 10+ years",
-      breathability: "Poor - Synthetic material",
-      care: "Machine wash, tumble dry safe",
-    },
-    impacts: {
-      water: "Low - Recycled content",
-      carbon: "Moderate - Production energy",
-      chemicals: "Minimal - Secondary material",
-    },
-    recommendations: [
-      "Much better than virgin polyester",
-      "Supports circular economy",
-      "Blend with natural fibers for comfort",
-      "Encourages waste reduction",
-    ],
-    icon: "♻️",
-  },
-};
+interface FabricAnalysis {
+  _id: string;
+  userId: string;
+  clothingItemId?: string;
+  imageUrl: string;
+  fabricType: string;
+  components: FabricComponent[];
+  sustainabilityScore: number;
+  recommendations: string[];
+  createdAt: string;
+  updatedAt: string;
+}
 
 export default function FabricScanner() {
-  const [dragActive, setDragActive] = useState(false);
-  const [uploadedImage, setUploadedImage] = useState<string | null>(null);
-  const [detectedFabric, setDetectedFabric] = useState<FabricAnalysis | null>(
-    null,
-  );
-  const [loading, setLoading] = useState(false);
-  const [manualInput, setManualInput] = useState("");
+  const { user } = useAuth();
+  
+  const [image, setImage] = useState<File | null>(null);
+  const [imagePreview, setImagePreview] = useState<string | null>(null);
+  const [isAnalyzing, setIsAnalyzing] = useState(false);
+  const [analysis, setAnalysis] = useState<FabricAnalysis | null>(null);
+  const [previousAnalyses, setPreviousAnalyses] = useState<FabricAnalysis[]>([]);
+  const [loading, setLoading] = useState(true);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const videoRef = useRef<HTMLVideoElement>(null);
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const [isCameraActive, setIsCameraActive] = useState(false);
 
-  const handleDrag = (e: React.DragEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    if (e.type === "dragenter" || e.type === "dragover") {
-      setDragActive(true);
-    } else if (e.type === "dragleave") {
-      setDragActive(false);
+  useEffect(() => {
+    fetchPreviousAnalyses();
+  }, [user?.userId]);
+
+  const fetchPreviousAnalyses = async () => {
+    if (!user?.userId) return;
+    
+    try {
+      setLoading(true);
+      const response = await fetch(`/api/fabric-analyses/user/${user.userId}`);
+      if (!response.ok) throw new Error("Failed to fetch previous analyses");
+      
+      const data = await response.json();
+      setPreviousAnalyses(data.data);
+    } catch (error) {
+      console.error("Error fetching previous analyses:", error);
+      toast.error("Failed to load previous analyses");
+    } finally {
+      setLoading(false);
     }
+  };
+
+  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      setImage(file);
+      setImagePreview(URL.createObjectURL(file));
+    }
+  };
+
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
   };
 
   const handleDrop = (e: React.DragEvent) => {
     e.preventDefault();
-    e.stopPropagation();
-    setDragActive(false);
-
-    const files = e.dataTransfer.files;
-    if (files && files.length > 0) {
-      processFile(files[0]);
+    const file = e.dataTransfer.files?.[0];
+    if (file && file.type.startsWith("image/")) {
+      setImage(file);
+      setImagePreview(URL.createObjectURL(file));
     }
   };
 
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files && e.target.files.length > 0) {
-      processFile(e.target.files[0]);
+  const startCamera = async () => {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+      if (videoRef.current) {
+        videoRef.current.srcObject = stream;
+        setIsCameraActive(true);
+      }
+    } catch (error) {
+      console.error("Error accessing camera:", error);
+      toast.error("Failed to access camera. Please check permissions.");
     }
   };
 
-  const processFile = (file: File) => {
-    if (!file.type.startsWith("image/")) {
-      toast.error("Please upload an image file");
-      return;
+  const captureImage = () => {
+    if (videoRef.current && canvasRef.current) {
+      const canvas = canvasRef.current;
+      const video = videoRef.current;
+      const context = canvas.getContext("2d");
+      
+      canvas.width = video.videoWidth;
+      canvas.height = video.videoHeight;
+      
+      if (context) {
+        context.drawImage(video, 0, 0, canvas.width, canvas.height);
+        canvas.toBlob((blob) => {
+          if (blob) {
+            const file = new File([blob], "captured-image.jpg", { type: "image/jpeg" });
+            setImage(file);
+            setImagePreview(URL.createObjectURL(file));
+            stopCamera();
+          }
+        }, "image/jpeg");
+      }
     }
+  };
 
-    const reader = new FileReader();
-    reader.onload = (event) => {
-      setUploadedImage(event.target?.result as string);
-      analyzeFabric();
-    };
-    reader.readAsDataURL(file);
+  const stopCamera = () => {
+    if (videoRef.current?.srcObject) {
+      const tracks = (videoRef.current.srcObject as MediaStream).getTracks();
+      tracks.forEach(track => track.stop());
+      setIsCameraActive(false);
+    }
   };
 
   const analyzeFabric = async () => {
-    setLoading(true);
-    // Simulate AI analysis
-    setTimeout(() => {
-      const fabrics = Object.keys(fabricDatabase);
-      const randomFabric = fabrics[Math.floor(Math.random() * fabrics.length)];
-      setDetectedFabric(fabricDatabase[randomFabric]);
-      setLoading(false);
-      toast.success("Fabric analysis complete!");
-    }, 2000);
+    if (!image || !user?.userId) return;
+    
+    try {
+      setIsAnalyzing(true);
+      
+      // In a real app, we would upload the image to a server and analyze it
+      // For now, we'll simulate the analysis with a delay
+      await new Promise(resolve => setTimeout(resolve, 2000));
+      
+      // Mock analysis result
+      const mockAnalysis: FabricAnalysis = {
+        _id: `analysis-${Date.now()}`,
+        userId: user.userId,
+        imageUrl: imagePreview || "",
+        fabricType: "Cotton Blend",
+        components: [
+          {
+            material: "Organic Cotton",
+            percentage: 70,
+            sustainabilityScore: 85,
+            environmentalImpact: "low"
+          },
+          {
+            material: "Polyester",
+            percentage: 30,
+            sustainabilityScore: 40,
+            environmentalImpact: "high"
+          }
+        ],
+        sustainabilityScore: 65,
+        recommendations: [
+          "This item is made with 70% organic cotton, which is a sustainable choice",
+          "The 30% polyester content has a higher environmental impact",
+          "Consider washing in cold water to extend the life of this garment",
+          "When disposing, look for textile recycling programs in your area"
+        ],
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString()
+      };
+      
+      setAnalysis(mockAnalysis);
+      setPreviousAnalyses([mockAnalysis, ...previousAnalyses]);
+      toast.success("Fabric analysis completed successfully!");
+    } catch (error) {
+      console.error("Error analyzing fabric:", error);
+      toast.error("Failed to analyze fabric");
+    } finally {
+      setIsAnalyzing(false);
+    }
   };
 
-  const detectFromInput = () => {
-    if (!manualInput.trim()) {
-      toast.error("Please enter a fabric type");
-      return;
+  const handleReset = () => {
+    setImage(null);
+    setImagePreview(null);
+    setAnalysis(null);
+    if (fileInputRef.current) {
+      fileInputRef.current.value = "";
     }
+  };
 
-    const lowerInput = manualInput.toLowerCase();
-    const matches = Object.keys(fabricDatabase).filter(
-      (fabric) => fabric.includes(lowerInput) || lowerInput.includes(fabric),
-    );
-
-    if (matches.length > 0) {
-      setDetectedFabric(fabricDatabase[matches[0]]);
+  const handleShare = () => {
+    if (navigator.share && analysis) {
+      navigator.share({
+        title: "Fabric Analysis",
+        text: `This garment has a sustainability score of ${analysis.sustainabilityScore}/100`,
+        url: window.location.href
+      }).catch(console.error);
     } else {
-      toast.error(
-        `Fabric "${manualInput}" not in database. Try: organic cotton, polyester, linen, wool, silk, or recycled polyester`,
-      );
+      // Fallback for browsers that don't support Web Share API
+      toast.info("Share functionality not available on this browser");
     }
   };
 
-  const getSustainabilityColor = (rating: string) => {
-    switch (rating) {
-      case "excellent":
-        return "text-green-600 bg-green-100 border-green-300";
-      case "good":
-        return "text-blue-600 bg-blue-100 border-blue-300";
-      case "moderate":
-        return "text-yellow-600 bg-yellow-100 border-yellow-300";
-      case "poor":
-        return "text-red-600 bg-red-100 border-red-300";
-      default:
-        return "text-gray-600 bg-gray-100 border-gray-300";
+  const handleDownload = () => {
+    if (analysis) {
+      const dataStr = JSON.stringify(analysis, null, 2);
+      const dataUri = `data:application/json;charset=utf-8,${encodeURIComponent(dataStr)}`;
+      
+      const exportFileDefaultName = `fabric-analysis-${new Date().toISOString().slice(0, 10)}.json`;
+      
+      const linkElement = document.createElement('a');
+      linkElement.setAttribute('href', dataUri);
+      linkElement.setAttribute('download', exportFileDefaultName);
+      linkElement.click();
     }
+  };
+
+  const getImpactColor = (impact: string) => {
+    switch (impact) {
+      case "low": return "bg-green-500";
+      case "medium": return "bg-yellow-500";
+      case "high": return "bg-red-500";
+      default: return "bg-gray-500";
+    }
+  };
+
+  const getSustainabilityScoreColor = (score: number) => {
+    if (score >= 80) return "text-green-500";
+    if (score >= 60) return "text-yellow-500";
+    return "text-red-500";
   };
 
   return (
-    <Layout>
-      {/* Hero Section */}
-      <section className="w-full bg-gradient-to-b from-primary/10 to-background border-b border-border/40 py-12 md:py-16">
-        <div className="container max-w-7xl mx-auto px-4 md:px-6">
-          <div className="space-y-3">
-            <div className="flex items-center gap-2">
-              <Zap className="w-8 h-8 text-primary" />
-              <h1 className="text-3xl md:text-4xl font-bold text-foreground">
-                Fabric Intelligence Scanner
-              </h1>
-            </div>
-            <p className="text-lg text-foreground/70 max-w-2xl">
-              Upload a clothing tag or receipt. AI detects fabric type and rates
-              sustainability impact
+    <div className="min-h-screen bg-gradient-to-br from-primary/5 via-background to-nature/5">
+      <div className="container py-8">
+        {/* Header */}
+        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-8">
+          <div>
+            <h1 className="text-3xl font-bold text-foreground flex items-center gap-2">
+              <Scan className="w-8 h-8 text-primary" />
+              Fabric Intelligence Scanner
+            </h1>
+            <p className="text-foreground/70 mt-2">
+              Upload a clothing tag or receipt to detect fabric type and rate sustainability
             </p>
           </div>
         </div>
-      </section>
 
-      <main className="w-full py-12 md:py-16">
-        <div className="container max-w-4xl mx-auto px-4 md:px-6 space-y-8">
-          {/* Upload Zone */}
-          <section className="space-y-6">
-            <div>
-              <h2 className="text-2xl font-bold text-foreground mb-2">
-                📸 Scan Fabric Tag
-              </h2>
-              <p className="text-foreground/70">
-                Upload an image or enter fabric type manually
-              </p>
-            </div>
-
-            <div
-              onDragEnter={handleDrag}
-              onDragLeave={handleDrag}
-              onDragOver={handleDrag}
-              onDrop={handleDrop}
-              className={`border-2 border-dashed rounded-xl p-12 text-center transition-all ${
-                dragActive
-                  ? "border-primary bg-primary/5"
-                  : "border-border/50 bg-muted/20 hover:border-primary/50"
-              } cursor-pointer`}
-              onClick={() => document.getElementById("fileInput")?.click()}
-            >
-              <input
-                id="fileInput"
-                type="file"
-                accept="image/*"
-                onChange={handleFileChange}
-                className="hidden"
-              />
-
-              <div className="space-y-4">
-                <div className="w-16 h-16 rounded-lg bg-primary/10 flex items-center justify-center mx-auto">
-                  <Upload className="w-8 h-8 text-primary" />
-                </div>
-                <div>
-                  <h3 className="text-xl font-semibold text-foreground">
-                    Drag & drop your fabric tag image
-                  </h3>
-                  <p className="text-foreground/70 mt-1">
-                    Or click to browse from your device
-                  </p>
-                </div>
-                <p className="text-sm text-foreground/50">
-                  Supports JPG, PNG, WebP (Max 10MB)
-                </p>
-              </div>
-            </div>
-
-            {/* Manual Input */}
-            <div className="space-y-3">
-              <p className="text-center text-foreground/70 font-medium">
-                Or enter fabric type manually
-              </p>
-              <div className="flex gap-2">
-                <input
-                  type="text"
-                  value={manualInput}
-                  onChange={(e) => setManualInput(e.target.value)}
-                  onKeyPress={(e) => e.key === "Enter" && detectFromInput()}
-                  placeholder="e.g., organic cotton, polyester, linen..."
-                  className="flex-1 px-4 py-3 bg-muted border border-border/50 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/50"
-                />
-                <button
-                  onClick={detectFromInput}
-                  className="px-6 py-3 bg-primary text-primary-foreground rounded-lg font-semibold hover:bg-primary/90 transition-all"
-                >
-                  Analyze
-                </button>
-              </div>
-            </div>
-
-            {/* Uploaded Image */}
-            {uploadedImage && (
-              <div className="rounded-lg overflow-hidden border border-border/50">
-                <img
-                  src={uploadedImage}
-                  alt="Uploaded fabric tag"
-                  className="w-full max-h-96 object-cover"
-                />
-              </div>
-            )}
-          </section>
-
-          {/* Analysis Results */}
-          {loading && (
-            <div className="card-base p-12 text-center space-y-4">
-              <div className="w-12 h-12 rounded-full border-4 border-primary/20 border-t-primary animate-spin mx-auto" />
-              <p className="text-foreground/70 font-medium">
-                Analyzing fabric composition...
-              </p>
-            </div>
-          )}
-
-          {detectedFabric && !loading && (
-            <div className="space-y-8 animate-slide-up">
-              {/* Main Result */}
-              <div className="card-base p-8 space-y-6 bg-gradient-to-br from-primary/5 to-nature/5 border-2 border-primary/20">
-                <div className="grid md:grid-cols-2 gap-8">
-                  {/* Fabric Type & Score */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          {/* Scanner Panel */}
+          <div className="lg:col-span-2">
+            <Card className="border-border/50 shadow-lg">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Camera className="w-5 h-5 text-primary" />
+                  Scan Fabric
+                </CardTitle>
+                <CardDescription>
+                  Upload an image of a clothing tag or receipt to analyze fabric composition
+                </CardDescription>
+              </CardHeader>
+              
+              <CardContent className="space-y-6">
+                {!imagePreview ? (
                   <div className="space-y-6">
-                    <div className="space-y-3">
-                      <div className="text-5xl">{detectedFabric.icon}</div>
-                      <h3 className="text-3xl font-bold text-foreground">
-                        {detectedFabric.fabricType}
-                      </h3>
-                    </div>
-
-                    {/* Sustainability Score */}
-                    <div className="space-y-3">
-                      <p className="text-sm font-semibold text-foreground/70">
-                        Sustainability Score
+                    {/* Upload Zone */}
+                    <div 
+                      className="border-2 border-dashed border-border/50 rounded-lg p-8 text-center cursor-pointer hover:border-primary/50 transition-colors"
+                      onDragOver={handleDragOver}
+                      onDrop={handleDrop}
+                      onClick={() => fileInputRef.current?.click()}
+                    >
+                      <Upload className="w-12 h-12 text-foreground/30 mx-auto mb-4" />
+                      <h3 className="text-lg font-medium text-foreground mb-2">Upload Image</h3>
+                      <p className="text-foreground/70 mb-4">
+                        Drag and drop an image here, or click to select a file
                       </p>
-                      <div className="space-y-2">
-                        <div className="flex items-center justify-between">
-                          <span className="text-2xl font-bold text-foreground">
-                            {detectedFabric.sustainability.score}/100
-                          </span>
-                          <span
-                            className={`px-4 py-2 rounded-full font-semibold text-sm border ${getSustainabilityColor(
-                              detectedFabric.sustainability.rating,
-                            )}`}
-                          >
-                            {detectedFabric.sustainability.rating.toUpperCase()}
-                          </span>
-                        </div>
-                        <div className="w-full bg-border/30 rounded-full h-2 overflow-hidden">
-                          <div
-                            className="bg-gradient-to-r from-green-500 to-primary h-full transition-all"
-                            style={{
-                              width: `${detectedFabric.sustainability.score}%`,
-                            }}
+                      <Button variant="outline">
+                        <Upload className="w-4 h-4 mr-2" />
+                        Select Image
+                      </Button>
+                      <input
+                        type="file"
+                        ref={fileInputRef}
+                        className="hidden"
+                        accept="image/*"
+                        onChange={handleFileSelect}
+                        aria-label="Select image file"
+                      />
+                    </div>
+                    
+                    <div className="relative">
+                      <div className="absolute inset-0 flex items-center">
+                        <Separator className="w-full" />
+                      </div>
+                      <div className="relative flex justify-center text-xs uppercase">
+                        <span className="bg-background px-2 text-foreground/50">or</span>
+                      </div>
+                    </div>
+                    
+                    {/* Camera Option */}
+                    <div className="text-center">
+                      <Button onClick={startCamera} variant="outline">
+                        <Camera className="w-4 h-4 mr-2" />
+                        Use Camera
+                      </Button>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="space-y-6">
+                    {/* Image Preview */}
+                    <div className="relative">
+                      {isCameraActive ? (
+                        <div className="relative">
+                          <video 
+                            ref={videoRef} 
+                            autoPlay 
+                            playsInline 
+                            className="w-full rounded-lg border border-border/50"
                           />
+                          <canvas ref={canvasRef} className="hidden" />
+                          <div className="absolute bottom-4 left-0 right-0 flex justify-center">
+                            <Button 
+                              onClick={captureImage}
+                              className="bg-white/80 hover:bg-white text-foreground"
+                            >
+                              <Camera className="w-5 h-5 mr-2" />
+                              Capture
+                            </Button>
+                          </div>
                         </div>
+                      ) : (
+                        <div className="relative">
+                          <img 
+                            src={imagePreview} 
+                            alt="Preview" 
+                            className="w-full rounded-lg border border-border/50"
+                          />
+                          <Button 
+                            variant="outline" 
+                            size="sm" 
+                            className="absolute top-2 right-2"
+                            onClick={handleReset}
+                          >
+                            <RotateCcw className="w-4 h-4" />
+                          </Button>
+                        </div>
+                      )}
+                    </div>
+                    
+                    {/* Action Buttons */}
+                    {!isCameraActive && (
+                      <div className="flex gap-2">
+                        <Button 
+                          onClick={analyzeFabric} 
+                          disabled={isAnalyzing}
+                          className="flex-1"
+                        >
+                          {isAnalyzing ? (
+                            <>
+                              <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-current mr-2"></div>
+                              Analyzing...
+                            </>
+                          ) : (
+                            <>
+                              <Scan className="w-4 h-4 mr-2" />
+                              Analyze Fabric
+                            </>
+                          )}
+                        </Button>
+                        <Button 
+                          variant="outline" 
+                          onClick={handleReset}
+                        >
+                          Reset
+                        </Button>
+                      </div>
+                    )}
+                  </div>
+                )}
+                
+                {/* Analysis Results */}
+                {analysis && (
+                  <div className="space-y-6 animate-fadeIn">
+                    <Separator />
+                    
+                    <div>
+                      <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
+                        <Leaf className="w-5 h-5 text-primary" />
+                        Analysis Results
+                      </h3>
+                      
+                      {/* Overall Score */}
+                      <div className="bg-muted rounded-lg p-4 mb-6">
+                        <div className="flex items-center justify-between mb-2">
+                          <span className="font-medium">Sustainability Score</span>
+                          <Badge 
+                            className={getSustainabilityScoreColor(analysis.sustainabilityScore)}
+                            variant="secondary"
+                          >
+                            {analysis.sustainabilityScore}/100
+                          </Badge>
+                        </div>
+                        <div className="w-full bg-secondary rounded-full h-2.5">
+                          <div 
+                            className="bg-primary h-2.5 rounded-full" 
+                            style={{ width: `${analysis.sustainabilityScore}%` }}
+                          ></div>
+                        </div>
+                      </div>
+                      
+                      {/* Fabric Type */}
+                      <div className="mb-6">
+                        <h4 className="font-medium mb-2">Fabric Type</h4>
+                        <Badge variant="outline" className="text-lg py-2 px-4">
+                          {analysis.fabricType}
+                        </Badge>
+                      </div>
+                      
+                      {/* Components */}
+                      <div className="mb-6">
+                        <h4 className="font-medium mb-3">Fabric Components</h4>
+                        <div className="space-y-3">
+                          {analysis.components.map((component, index) => (
+                            <div key={index} className="border border-border/50 rounded-lg p-3">
+                              <div className="flex justify-between items-center mb-2">
+                                <span className="font-medium">{component.material}</span>
+                                <Badge variant="secondary">{component.percentage}%</Badge>
+                              </div>
+                              <div className="flex items-center justify-between">
+                                <div className="flex items-center gap-2">
+                                  <div className={`w-3 h-3 rounded-full ${getImpactColor(component.environmentalImpact)}`}></div>
+                                  <span className="text-sm capitalize">{component.environmentalImpact} impact</span>
+                                </div>
+                                <Badge 
+                                  className={getSustainabilityScoreColor(component.sustainabilityScore)}
+                                  variant="outline"
+                                >
+                                  {component.sustainabilityScore}/100
+                                </Badge>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                      
+                      {/* Recommendations */}
+                      <div>
+                        <h4 className="font-medium mb-3 flex items-center gap-2">
+                          <Info className="w-4 h-4" />
+                          Recommendations
+                        </h4>
+                        <ul className="space-y-2">
+                          {analysis.recommendations.map((rec, index) => (
+                            <li key={index} className="flex items-start gap-2">
+                              <CheckCircle className="w-4 h-4 text-green-500 mt-0.5 flex-shrink-0" />
+                              <span className="text-foreground/80">{rec}</span>
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                      
+                      {/* Action Buttons */}
+                      <div className="flex gap-2 mt-6">
+                        <Button onClick={handleShare} variant="outline" className="flex-1">
+                          <Share2 className="w-4 h-4 mr-2" />
+                          Share
+                        </Button>
+                        <Button onClick={handleDownload} variant="outline" className="flex-1">
+                          <Download className="w-4 h-4 mr-2" />
+                          Download
+                        </Button>
                       </div>
                     </div>
                   </div>
+                )}
+              </CardContent>
+            </Card>
+          </div>
 
-                  {/* Environmental Impacts */}
+          {/* Previous Analyses */}
+          <div className="lg:col-span-1">
+            <Card className="border-border/50 shadow-lg h-full">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Leaf className="w-5 h-5 text-primary" />
+                  Previous Analyses
+                </CardTitle>
+                <CardDescription>
+                  Your fabric analysis history
+                </CardDescription>
+              </CardHeader>
+              
+              <CardContent className="space-y-4 max-h-[calc(100vh-200px)] overflow-y-auto">
+                {loading ? (
+                  <div className="flex justify-center py-8">
+                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+                  </div>
+                ) : previousAnalyses.length > 0 ? (
                   <div className="space-y-3">
-                    <h4 className="font-bold text-foreground mb-4">
-                      Environmental Impacts
-                    </h4>
-                    <div className="space-y-3">
-                      <div className="p-4 bg-blue-50/50 border border-blue-200/50 rounded-lg space-y-2">
-                        <div className="flex items-center gap-2">
-                          <Droplet className="w-5 h-5 text-blue-600" />
-                          <p className="font-semibold text-blue-900">
-                            Water Use
-                          </p>
+                    {previousAnalyses.map((analysis) => (
+                      <div 
+                        key={analysis._id} 
+                        className="border border-border/50 rounded-lg p-3 cursor-pointer hover:bg-muted/50 transition-colors"
+                        onClick={() => setAnalysis(analysis)}
+                      >
+                        <div className="flex justify-between items-start mb-2">
+                          <h3 className="font-medium text-sm truncate">{analysis.fabricType}</h3>
+                          <Badge 
+                            className={getSustainabilityScoreColor(analysis.sustainabilityScore)}
+                            variant="secondary"
+                          >
+                            {analysis.sustainabilityScore}
+                          </Badge>
                         </div>
-                        <p className="text-sm text-blue-800">
-                          {detectedFabric.impacts.water}
+                        
+                        <div className="flex items-center gap-2 mb-2">
+                          {analysis.components.slice(0, 2).map((component, index) => (
+                            <Badge key={index} variant="outline" className="text-xs">
+                              {component.material}
+                            </Badge>
+                          ))}
+                          {analysis.components.length > 2 && (
+                            <Badge variant="outline" className="text-xs">
+                              +{analysis.components.length - 2}
+                            </Badge>
+                          )}
+                        </div>
+                        
+                        <p className="text-xs text-foreground/70">
+                          {new Date(analysis.createdAt).toLocaleDateString()}
                         </p>
                       </div>
-
-                      <div className="p-4 bg-orange-50/50 border border-orange-200/50 rounded-lg space-y-2">
-                        <div className="flex items-center gap-2">
-                          <Flame className="w-5 h-5 text-orange-600" />
-                          <p className="font-semibold text-orange-900">
-                            Carbon
-                          </p>
-                        </div>
-                        <p className="text-sm text-orange-800">
-                          {detectedFabric.impacts.carbon}
-                        </p>
-                      </div>
-
-                      <div className="p-4 bg-red-50/50 border border-red-200/50 rounded-lg space-y-2">
-                        <div className="flex items-center gap-2">
-                          <AlertCircle className="w-5 h-5 text-red-600" />
-                          <p className="font-semibold text-red-900">
-                            Chemicals
-                          </p>
-                        </div>
-                        <p className="text-sm text-red-800">
-                          {detectedFabric.impacts.chemicals}
-                        </p>
-                      </div>
-                    </div>
+                    ))}
                   </div>
-                </div>
-              </div>
-
-              {/* Properties */}
-              <div className="grid md:grid-cols-3 gap-6">
-                <div className="card-base p-6 space-y-3 hover:shadow-lg transition-all">
-                  <h4 className="font-bold text-foreground flex items-center gap-2">
-                    <CheckCircle2 className="w-5 h-5 text-primary" />
-                    Durability
-                  </h4>
-                  <p className="text-sm text-foreground/70">
-                    {detectedFabric.properties.durability}
-                  </p>
-                </div>
-
-                <div className="card-base p-6 space-y-3 hover:shadow-lg transition-all">
-                  <h4 className="font-bold text-foreground flex items-center gap-2">
-                    <Leaf className="w-5 h-5 text-primary" />
-                    Breathability
-                  </h4>
-                  <p className="text-sm text-foreground/70">
-                    {detectedFabric.properties.breathability}
-                  </p>
-                </div>
-
-                <div className="card-base p-6 space-y-3 hover:shadow-lg transition-all">
-                  <h4 className="font-bold text-foreground flex items-center gap-2">
-                    <ImageIcon className="w-5 h-5 text-primary" />
-                    Care Instructions
-                  </h4>
-                  <p className="text-sm text-foreground/70">
-                    {detectedFabric.properties.care}
-                  </p>
-                </div>
-              </div>
-
-              {/* Recommendations */}
-              <div className="card-base p-8 space-y-6 bg-gradient-to-r from-primary/5 to-nature/5 border-2 border-primary/20">
-                <h3 className="text-xl font-bold text-foreground">
-                  💡 Recommendations
-                </h3>
-                <div className="space-y-3">
-                  {detectedFabric.recommendations.map((rec, idx) => (
-                    <div
-                      key={idx}
-                      className="flex items-start gap-3 p-3 bg-card border border-border/50 rounded-lg"
-                    >
-                      <CheckCircle2 className="w-5 h-5 text-primary flex-shrink-0 mt-0.5" />
-                      <p className="text-foreground/80 text-sm">{rec}</p>
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-              {/* Quick Fabric Reference */}
-              <div className="card-base p-8 space-y-6">
-                <h3 className="text-xl font-bold text-foreground">
-                  📚 Other Fabrics in Database
-                </h3>
-                <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-                  {Object.entries(fabricDatabase).map(([key, fabric]) => (
-                    <button
-                      key={key}
-                      onClick={() => {
-                        setDetectedFabric(fabric);
-                        setUploadedImage(null);
-                        setManualInput("");
-                      }}
-                      className="p-4 rounded-lg border border-border/50 bg-muted/20 hover:border-primary/50 text-center transition-all text-sm"
-                    >
-                      <div className="text-2xl mb-1">{fabric.icon}</div>
-                      <div className="font-semibold text-foreground line-clamp-1">
-                        {key}
-                      </div>
-                      <div className="text-xs text-foreground/60">
-                        Score: {fabric.sustainability.score}
-                      </div>
-                    </button>
-                  ))}
-                </div>
-              </div>
-            </div>
-          )}
+                ) : (
+                  <div className="text-center py-8">
+                    <Scan className="w-12 h-12 text-foreground/20 mx-auto mb-4" />
+                    <h3 className="font-medium text-foreground mb-1">No Previous Analyses</h3>
+                    <p className="text-sm text-foreground/70">
+                      Upload an image to analyze fabric composition
+                    </p>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </div>
         </div>
-      </main>
-    </Layout>
+      </div>
+    </div>
   );
 }

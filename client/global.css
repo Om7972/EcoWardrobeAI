@@ -1,148 +1,55 @@
-/** @import must precede all other statements */
-@import url("https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap");
-
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
 @layer base {
-  /**
-   * EcoWardrobe Design System
-   * Color variables in HSL format for Tailwind CSS integration
-   * Supports both light and dark modes with custom eco-conscious palette
-   */
   :root {
-    /* Base colors - Light mode */
     --background: 0 0% 100%;
-    --foreground: 10 14% 18%;
-
+    --foreground: 240 10% 3.9%;
     --card: 0 0% 100%;
-    --card-foreground: 10 14% 18%;
-
+    --card-foreground: 240 10% 3.9%;
     --popover: 0 0% 100%;
-    --popover-foreground: 10 14% 18%;
-
-    /* Primary: Deep forest green - eco-friendly main color */
-    --primary: 150 55% 32%;
-    --primary-foreground: 0 0% 100%;
-
-    /* Secondary: Soft earth tone */
-    --secondary: 35 85% 88%;
-    --secondary-foreground: 10 14% 18%;
-
-    /* Accents and supporting colors */
-    --muted: 0 0% 92%;
-    --muted-foreground: 10 9% 45%;
-
-    --accent: 150 60% 50%;
-    --accent-foreground: 0 0% 100%;
-
+    --popover-foreground: 240 10% 3.9%;
+    --primary: 142 72% 29%;
+    --primary-foreground: 0 0% 98%;
+    --secondary: 240 4.8% 95.9%;
+    --secondary-foreground: 240 5.9% 10%;
+    --muted: 240 4.8% 95.9%;
+    --muted-foreground: 240 3.8% 46.1%;
+    --accent: 240 4.8% 95.9%;
+    --accent-foreground: 240 5.9% 10%;
     --destructive: 0 84.2% 60.2%;
-    --destructive-foreground: 210 40% 98%;
-
-    --border: 0 0% 92%;
-    --input: 0 0% 96%;
-    --ring: 150 55% 32%;
-
-    --radius: 0.75rem;
-
-    /* Eco palette - Green shades */
-    --eco-50: 150 80% 96%;
-    --eco-100: 150 75% 92%;
-    --eco-200: 150 70% 85%;
-    --eco-300: 150 65% 75%;
-    --eco-400: 150 60% 60%;
-    --eco-500: 150 55% 50%;
-    --eco-600: 150 60% 40%;
-    --eco-700: 150 65% 30%;
-    --eco-800: 150 70% 22%;
-    --eco-900: 150 75% 15%;
-
-    /* Nature colors */
-    --nature: 145 39% 45%;
-    --nature-light: 145 50% 72%;
-    --nature-dark: 145 45% 28%;
-
-    /* Impact tracking colors */
-    --impact-positive: 142 71% 45%;
-    --impact-warning: 38 92% 50%;
-    --impact-neutral: 210 8% 58%;
-
-    /* Sidebar styling */
-    --sidebar-background: 0 0% 98%;
-    --sidebar-foreground: 10 14% 28%;
-    --sidebar-primary: 150 55% 32%;
-    --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 150 60% 50%;
-    --sidebar-accent-foreground: 0 0% 100%;
-    --sidebar-border: 0 0% 88%;
-    --sidebar-ring: 150 55% 32%;
+    --destructive-foreground: 0 0% 98%;
+    --border: 240 5.9% 90%;
+    --input: 240 5.9% 90%;
+    --ring: 142 72% 29%;
+    --radius: 0.5rem;
+    --nature: 142 76% 89%;
+    --nature-foreground: 142 72% 29%;
   }
 
   .dark {
-    /* Base colors - Dark mode */
-    --background: 10 14% 12%;
-    --foreground: 0 0% 95%;
-
-    --card: 10 14% 18%;
-    --card-foreground: 0 0% 95%;
-
-    --popover: 10 14% 16%;
-    --popover-foreground: 0 0% 95%;
-
-    /* Primary */
-    --primary: 150 55% 55%;
-    --primary-foreground: 10 14% 12%;
-
-    /* Secondary */
-    --secondary: 35 75% 22%;
-    --secondary-foreground: 0 0% 95%;
-
-    /* Accents */
-    --muted: 10 14% 28%;
-    --muted-foreground: 0 0% 75%;
-
-    --accent: 150 60% 60%;
-    --accent-foreground: 10 14% 12%;
-
-    --destructive: 0 84.2% 60.2%;
-    --destructive-foreground: 0 0% 100%;
-
-    --border: 10 14% 25%;
-    --input: 10 14% 22%;
-    --ring: 150 55% 55%;
-
-    /* Eco palette - Dark mode */
-    --eco-50: 150 80% 95%;
-    --eco-100: 150 75% 90%;
-    --eco-200: 150 70% 80%;
-    --eco-300: 150 65% 70%;
-    --eco-400: 150 60% 55%;
-    --eco-500: 150 55% 50%;
-    --eco-600: 150 60% 45%;
-    --eco-700: 150 65% 35%;
-    --eco-800: 150 70% 25%;
-    --eco-900: 150 75% 18%;
-
-    /* Nature colors */
-    --nature: 145 39% 65%;
-    --nature-light: 145 50% 75%;
-    --nature-dark: 145 45% 42%;
-
-    /* Impact tracking colors */
-    --impact-positive: 142 71% 55%;
-    --impact-warning: 38 92% 55%;
-    --impact-neutral: 210 8% 68%;
-
-    /* Sidebar styling */
-    --sidebar-background: 10 14% 14%;
-    --sidebar-foreground: 0 0% 90%;
-    --sidebar-primary: 150 55% 55%;
-    --sidebar-primary-foreground: 10 14% 12%;
-    --sidebar-accent: 150 60% 60%;
-    --sidebar-accent-foreground: 10 14% 12%;
-    --sidebar-border: 10 14% 25%;
-    --sidebar-ring: 150 55% 55%;
+    --background: 240 10% 3.9%;
+    --foreground: 0 0% 98%;
+    --card: 240 10% 3.9%;
+    --card-foreground: 0 0% 98%;
+    --popover: 240 10% 3.9%;
+    --popover-foreground: 0 0% 98%;
+    --primary: 142 72% 59%;
+    --primary-foreground: 0 0% 98%;
+    --secondary: 240 3.7% 15.9%;
+    --secondary-foreground: 0 0% 98%;
+    --muted: 240 3.7% 15.9%;
+    --muted-foreground: 240 5% 64.9%;
+    --accent: 240 3.7% 15.9%;
+    --accent-foreground: 0 0% 98%;
+    --destructive: 0 62.8% 30.6%;
+    --destructive-foreground: 0 0% 98%;
+    --border: 240 3.7% 15.9%;
+    --input: 240 3.7% 15.9%;
+    --ring: 142 72% 59%;
+    --nature: 142 76% 20%;
+    --nature-foreground: 142 72% 89%;
   }
 }
 
@@ -150,58 +57,179 @@
   * {
     @apply border-border;
   }
-
   body {
     @apply bg-background text-foreground;
-    font-feature-settings: "rlig" 1 "calt" 1;
-  }
-
-  h1, h2, h3, h4, h5, h6 {
-    @apply font-semibold;
-  }
-
-  h1 {
-    @apply text-4xl md:text-5xl;
-  }
-
-  h2 {
-    @apply text-3xl md:text-4xl;
-  }
-
-  h3 {
-    @apply text-xl md:text-2xl;
-  }
-
-  :where(p, span, li, h1, h2, h3, h4, h5, h6, a, button, label, td, th) {
-    overflow-wrap: anywhere;
-    word-break: break-word;
-  }
-
-  pre,
-  code {
-    overflow-x: auto;
-    white-space: pre;
   }
 }
 
-@layer components {
-  .btn-primary {
-    @apply px-6 py-3 bg-primary text-primary-foreground rounded-lg font-semibold hover:bg-eco-700 active:bg-eco-800 transition-colors duration-200;
+/* Custom Animations */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
   }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
 
-  .btn-secondary {
-    @apply px-6 py-3 bg-secondary text-secondary-foreground rounded-lg font-semibold hover:bg-eco-100 active:bg-eco-200 transition-colors duration-200;
+@keyframes slideInLeft {
+  from {
+    opacity: 0;
+    transform: translateX(-20px);
   }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
 
-  .card-base {
-    @apply bg-card text-card-foreground rounded-lg border border-border shadow-sm hover:shadow-md transition-shadow duration-200;
+@keyframes slideInRight {
+  from {
+    opacity: 0;
+    transform: translateX(20px);
   }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
 
-  .fade-in-animation {
-    animation: fadeIn 0.6s ease-out;
+/* 3D Animations */
+@keyframes rotate3d {
+  0% {
+    transform: perspective(1000px) rotateY(0deg);
   }
+  100% {
+    transform: perspective(1000px) rotateY(360deg);
+  }
+}
 
-  .slide-up-animation {
-    animation: slideUp 0.6s ease-out;
+@keyframes flip3d {
+  0% {
+    transform: perspective(800px) rotateX(0);
   }
+  100% {
+    transform: perspective(800px) rotateX(180deg);
+  }
+}
+
+@keyframes float3d {
+  0% {
+    transform: translateZ(0) translateY(0);
+    box-shadow: 0 5px 15px 0px rgba(0, 0, 0, 0.1);
+  }
+  50% {
+    transform: translateZ(20px) translateY(-10px);
+    box-shadow: 0 25px 15px 0px rgba(0, 0, 0, 0.05);
+  }
+  100% {
+    transform: translateZ(0) translateY(0);
+    box-shadow: 0 5px 15px 0px rgba(0, 0, 0, 0.1);
+  }
+}
+
+@keyframes tilt3d {
+  0% {
+    transform: perspective(1000px) rotateX(0) rotateY(0);
+  }
+  25% {
+    transform: perspective(1000px) rotateX(5deg) rotateY(5deg);
+  }
+  50% {
+    transform: perspective(1000px) rotateX(-5deg) rotateY(5deg);
+  }
+  75% {
+    transform: perspective(1000px) rotateX(-5deg) rotateY(-5deg);
+  }
+  100% {
+    transform: perspective(1000px) rotateX(0) rotateY(0);
+  }
+}
+
+/* Apply 3D animations */
+.animate-rotate3d {
+  animation: rotate3d 10s linear infinite;
+  transform-style: preserve-3d;
+  will-change: transform;
+}
+
+.animate-flip3d {
+  animation: flip3d 0.6s ease-out forwards;
+  transform-style: preserve-3d;
+  will-change: transform;
+}
+
+.animate-float3d {
+  animation: float3d 6s ease-in-out infinite;
+  transform-style: preserve-3d;
+  will-change: transform;
+}
+
+.animate-tilt3d {
+  animation: tilt3d 8s ease-in-out infinite;
+  transform-style: preserve-3d;
+  will-change: transform;
+}
+
+.hover-float3d:hover {
+  animation: float3d 3s ease-in-out infinite;
+  transform-style: preserve-3d;
+  will-change: transform;
+}
+
+.hover-tilt3d:hover {
+  animation: tilt3d 4s ease-in-out infinite;
+  transform-style: preserve-3d;
+  will-change: transform;
+}
+
+@keyframes pulseGlow {
+  0% {
+    box-shadow: 0 0 0 0 rgba(92, 183, 92, 0.4);
+  }
+  70% {
+    box-shadow: 0 0 0 10px rgba(92, 183, 92, 0);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(92, 183, 92, 0);
+  }
+}
+
+.animate-fadeIn {
+  animation: fadeIn 0.3s ease-out forwards;
+}
+
+.animate-slideInLeft {
+  animation: slideInLeft 0.3s ease-out forwards;
+}
+
+.animate-slideInRight {
+  animation: slideInRight 0.3s ease-out forwards;
+}
+
+.animate-pulseGlow {
+  animation: pulseGlow 2s infinite;
+}
+
+/* Custom Styles */
+.card-hover {
+  @apply transition-all duration-300 hover:shadow-lg hover:-translate-y-1;
+}
+
+.btn-primary {
+  @apply bg-primary text-primary-foreground hover:bg-primary/90 transition-colors duration-200;
+}
+
+.btn-secondary {
+  @apply bg-secondary text-secondary-foreground hover:bg-secondary/80 transition-colors duration-200;
+}
+
+.gradient-bg {
+  @apply bg-gradient-to-br from-primary/5 via-background to-nature/5;
+}
+
+.text-nature {
+  @apply text-[hsl(142,72%,29%)] dark:text-[hsl(142,72%,59%)];
 }

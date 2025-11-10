@@ -1,412 +1,828 @@
 import { useState, useEffect } from "react";
-import Layout from "@/components/Layout";
-import {
-  Shirt,
-  Droplet,
-  Thermometer,
-  AlertCircle,
-  MapPin,
-  Phone,
-  Clock,
+import { Link, useParams } from "react-router-dom";
+import { 
+  Leaf, 
+  Shirt, 
+  Settings, 
+  MapPin, 
+  Clock, 
+  Plus, 
+  Edit, 
+  Trash2, 
+  Search,
+  Filter,
   Star,
-  MessageCircle,
   Wrench,
-  Leaf,
-  Home,
+  Scissors,
+  Sparkles
 } from "lucide-react";
 import { toast } from "sonner";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Badge } from "@/components/ui/badge";
+import { Separator } from "@/components/ui/separator";
+import { 
+  Dialog, 
+  DialogContent, 
+  DialogDescription, 
+  DialogFooter, 
+  DialogHeader, 
+  DialogTitle, 
+  DialogTrigger 
+} from "@/components/ui/dialog";
+import { useAuth } from "@/hooks/useAuth";
 
-interface CareLabel {
-  garmentName: string;
+interface CareInstruction {
+  _id: string;
+  clothingItemId: string;
   fabricType: string;
-  washingInstructions: string[];
-  dryingInstructions: string[];
-  ironingInstructions: string[];
-  specialInstructions: string[];
-  temperature: string;
-  symbol: string;
+  washingInstructions: string;
+  dryingInstructions: string;
+  ironingInstructions: string;
+  specialCareNotes: string;
+  createdAt: string;
+  updatedAt: string;
 }
 
-interface LocalService {
-  id: string;
+interface RepairLog {
+  _id: string;
+  userId: string;
+  clothingItemId: string;
+  repairType: "repair" | "alteration" | "upcycling";
+  description: string;
+  date: string;
+  cost: number;
+  serviceProvider?: string;
+  notes: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+interface ServiceProvider {
+  _id: string;
   name: string;
-  type: string;
+  type: "tailor" | "cobbler" | "cleaner" | "other";
+  address: string;
+  latitude: number;
+  longitude: number;
+  phone?: string;
+  website?: string;
   rating: number;
   reviews: number;
-  distance: number;
-  address: string;
-  phone: string;
-  hours: string;
   specialties: string[];
+  createdAt: string;
+  updatedAt: string;
 }
 
 export default function CareRepairHub() {
-  const [selectedFabric, setSelectedFabric] = useState("cotton");
-  const [careLabel, setCareLabel] = useState<CareLabel | null>(null);
-  const [services, setServices] = useState<LocalService[]>([]);
-  const [loading, setLoading] = useState(false);
-  const [serviceType, setServiceType] = useState<string>("tailor");
-
-  const fabrics = [
-    { id: "cotton", label: "Cotton", emoji: "🧵" },
-    { id: "linen", label: "Linen", emoji: "👕" },
-    { id: "silk", label: "Silk", emoji: "✨" },
-    { id: "wool", label: "Wool", emoji: "🧶" },
-    { id: "polyester", label: "Polyester", emoji: "🏭" },
-  ];
-
-  const serviceTypes = [
-    { id: "tailor", label: "Tailors", emoji: "✂️" },
-    { id: "cobbler", label: "Cobblers", emoji: "👞" },
-    { id: "cleaner", label: "Dry Cleaners", emoji: "🧼" },
-    { id: "leather-repair", label: "Leather Repair", emoji: "🎒" },
-  ];
+  const { user } = useAuth();
+  const { id: clothingItemId } = useParams<{ id?: string }>();
+  
+  const [activeTab, setActiveTab] = useState<"care" | "repair" | "services">("care");
+  const [careInstructions, setCareInstructions] = useState<CareInstruction | null>(null);
+  const [repairLogs, setRepairLogs] = useState<RepairLog[]>([]);
+  const [serviceProviders, setServiceProviders] = useState<ServiceProvider[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  
+  // Form states
+  const [careForm, setCareForm] = useState({
+    fabricType: "",
+    washingInstructions: "",
+    dryingInstructions: "",
+    ironingInstructions: "",
+    specialCareNotes: ""
+  });
+  
+  const [repairForm, setRepairForm] = useState({
+    clothingItemId: clothingItemId || "",
+    repairType: "repair" as "repair" | "alteration" | "upcycling",
+    description: "",
+    date: new Date().toISOString().split("T")[0],
+    cost: 0,
+    serviceProvider: "",
+    notes: ""
+  });
+  
+  const [serviceFilter, setServiceFilter] = useState({
+    type: "",
+    search: ""
+  });
+  
+  const [isCareDialogOpen, setIsCareDialogOpen] = useState(false);
+  const [isRepairDialogOpen, setIsRepairDialogOpen] = useState(false);
 
   useEffect(() => {
-    fetchCareLabel();
-  }, [selectedFabric]);
+    if (clothingItemId) {
+      fetchCareInstructions();
+      fetchRepairHistory();
+    }
+    fetchServiceProviders();
+  }, [clothingItemId]);
 
-  useEffect(() => {
-    fetchNearbyServices();
-  }, [serviceType]);
+  const fetchCareInstructions = async () => {
+    if (!clothingItemId) return;
+    
+    try {
+      const response = await fetch(`/api/care/instructions/${clothingItemId}`);
+      if (!response.ok) throw new Error("Failed to fetch care instructions");
+      
+      const data = await response.json();
+      setCareInstructions(data.data);
+      
+      // Populate form with existing data
+      if (data.data) {
+        setCareForm({
+          fabricType: data.data.fabricType,
+          washingInstructions: data.data.washingInstructions,
+          dryingInstructions: data.data.dryingInstructions,
+          ironingInstructions: data.data.ironingInstructions,
+          specialCareNotes: data.data.specialCareNotes
+        });
+      }
+    } catch (error) {
+      console.error("Error fetching care instructions:", error);
+      toast.error("Failed to load care instructions");
+    }
+  };
 
-  const fetchCareLabel = async () => {
+  const fetchRepairHistory = async () => {
+    if (!clothingItemId || !user?.userId) return;
+    
+    try {
+      const response = await fetch(`/api/care/repair-history/${user.userId}/${clothingItemId}`);
+      if (!response.ok) throw new Error("Failed to fetch repair history");
+      
+      const data = await response.json();
+      setRepairLogs(data.data);
+    } catch (error) {
+      console.error("Error fetching repair history:", error);
+      toast.error("Failed to load repair history");
+    }
+  };
+
+  const fetchServiceProviders = async () => {
     try {
       setLoading(true);
-      const res = await fetch(
-        `/api/care/instructions?fabricType=${selectedFabric}`,
-      );
-      if (!res.ok) throw new Error("Failed to fetch care instructions");
-      const data = await res.json();
-      setCareLabel(data.data);
+      const queryParams = new URLSearchParams();
+      if (serviceFilter.type) queryParams.append("type", serviceFilter.type);
+      if (serviceFilter.search) queryParams.append("search", serviceFilter.search);
+      
+      const response = await fetch(`/api/care/all-services?${queryParams.toString()}`);
+      if (!response.ok) throw new Error("Failed to fetch service providers");
+      
+      const data = await response.json();
+      setServiceProviders(data.data);
     } catch (error) {
-      console.error("Error fetching care label:", error);
-      toast.error("Failed to load care instructions");
+      console.error("Error fetching service providers:", error);
+      toast.error("Failed to load service providers");
     } finally {
       setLoading(false);
     }
   };
 
-  const fetchNearbyServices = async () => {
+  const handleSaveCareInstructions = async () => {
+    if (!clothingItemId) return;
+    
     try {
-      const res = await fetch(
-        `/api/care/nearby-services?serviceType=${serviceType}`,
-      );
-      if (!res.ok) throw new Error("Failed to fetch services");
-      const data = await res.json();
-      setServices(data.data);
+      setSaving(true);
+      const response = await fetch(`/api/care/instructions/${clothingItemId}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(careForm)
+      });
+      
+      if (!response.ok) throw new Error("Failed to save care instructions");
+      
+      const data = await response.json();
+      setCareInstructions(data.data);
+      setIsCareDialogOpen(false);
+      toast.success("Care instructions saved successfully!");
     } catch (error) {
-      console.error("Error fetching services:", error);
-      toast.error("Failed to load services");
+      console.error("Error saving care instructions:", error);
+      toast.error("Failed to save care instructions");
+    } finally {
+      setSaving(false);
     }
   };
 
+  const handleAddRepairLog = async () => {
+    if (!user?.userId) return;
+    
+    try {
+      setSaving(true);
+      const response = await fetch(`/api/care/repair-log/${user.userId}`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(repairForm)
+      });
+      
+      if (!response.ok) throw new Error("Failed to add repair log");
+      
+      const data = await response.json();
+      setRepairLogs([data.data, ...repairLogs]);
+      setIsRepairDialogOpen(false);
+      setRepairForm({
+        clothingItemId: clothingItemId || "",
+        repairType: "repair",
+        description: "",
+        date: new Date().toISOString().split("T")[0],
+        cost: 0,
+        serviceProvider: "",
+        notes: ""
+      });
+      toast.success("Repair log added successfully!");
+    } catch (error) {
+      console.error("Error adding repair log:", error);
+      toast.error("Failed to add repair log");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleDeleteRepairLog = async (logId: string) => {
+    try {
+      const response = await fetch(`/api/care/repair-log/${logId}`, {
+        method: "DELETE"
+      });
+      
+      if (!response.ok) throw new Error("Failed to delete repair log");
+      
+      setRepairLogs(repairLogs.filter(log => log._id !== logId));
+      toast.success("Repair log deleted successfully!");
+    } catch (error) {
+      console.error("Error deleting repair log:", error);
+      toast.error("Failed to delete repair log");
+    }
+  };
+
+  const filteredServiceProviders = serviceProviders.filter(provider => {
+    const matchesType = !serviceFilter.type || provider.type === serviceFilter.type;
+    const matchesSearch = !serviceFilter.search || 
+      provider.name.toLowerCase().includes(serviceFilter.search.toLowerCase()) ||
+      provider.address.toLowerCase().includes(serviceFilter.search.toLowerCase()) ||
+      provider.specialties.some(spec => spec.toLowerCase().includes(serviceFilter.search.toLowerCase()));
+    return matchesType && matchesSearch;
+  });
+
   return (
-    <Layout>
-      {/* Hero Section */}
-      <section className="w-full bg-gradient-to-b from-primary/10 to-background border-b border-border/40 py-12 md:py-16">
-        <div className="container max-w-7xl mx-auto px-4 md:px-6">
-          <div className="space-y-3">
-            <div className="flex items-center gap-2">
-              <Leaf className="w-8 h-8 text-primary" />
-              <h1 className="text-3xl md:text-4xl font-bold text-foreground">
-                Care & Repair Hub
-              </h1>
-            </div>
-            <p className="text-lg text-foreground/70 max-w-2xl">
-              Extend the life of your clothing with smart care instructions,
-              repair tracking, and local tailor services
+    <div className="min-h-screen bg-gradient-to-br from-primary/5 via-background to-nature/5">
+      <div className="container py-8">
+        {/* Header */}
+        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-8">
+          <div>
+            <h1 className="text-3xl font-bold text-foreground flex items-center gap-2">
+              <Wrench className="w-8 h-8 text-primary" />
+              Care & Repair Hub
+            </h1>
+            <p className="text-foreground/70 mt-2">
+              Extend the life of your clothing with proper care and repair
             </p>
           </div>
+          
+          <div className="flex gap-2">
+            <Button 
+              variant={activeTab === "care" ? "default" : "outline"} 
+              onClick={() => setActiveTab("care")}
+              className="transition-all duration-300"
+            >
+              <Shirt className="w-4 h-4 mr-2" />
+              Care Instructions
+            </Button>
+            <Button 
+              variant={activeTab === "repair" ? "default" : "outline"} 
+              onClick={() => setActiveTab("repair")}
+              className="transition-all duration-300"
+            >
+              <Settings className="w-4 h-4 mr-2" />
+              Repair Log
+            </Button>
+            <Button 
+              variant={activeTab === "services" ? "default" : "outline"} 
+              onClick={() => setActiveTab("services")}
+              className="transition-all duration-300"
+            >
+              <MapPin className="w-4 h-4 mr-2" />
+              Local Services
+            </Button>
+          </div>
         </div>
-      </section>
 
-      <main className="w-full py-12 md:py-16">
-        <div className="container max-w-7xl mx-auto px-4 md:px-6 space-y-12">
-          {/* Smart Care Labels */}
-          <section className="space-y-6">
-            <div>
-              <h2 className="text-2xl font-bold text-foreground mb-2">
-                🏷️ Smart Care Labels
-              </h2>
-              <p className="text-foreground/70">
-                Digital care instructions for your fabrics
-              </p>
-            </div>
-
-            {/* Fabric Selection */}
-            <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
-              {fabrics.map((fabric) => (
-                <button
-                  key={fabric.id}
-                  onClick={() => setSelectedFabric(fabric.id)}
-                  className={`p-4 rounded-lg border-2 transition-all text-center ${
-                    selectedFabric === fabric.id
-                      ? "border-primary bg-primary/10"
-                      : "border-border/30 bg-muted/20 hover:border-primary/50"
-                  }`}
-                >
-                  <div className="text-3xl mb-2">{fabric.emoji}</div>
-                  <div className="font-semibold text-sm text-foreground">
-                    {fabric.label}
-                  </div>
-                </button>
-              ))}
-            </div>
-
-            {/* Care Label Details */}
-            {careLabel && !loading && (
-              <div className="card-base p-8 space-y-8 animate-slide-up">
-                <div className="grid md:grid-cols-2 gap-8">
-                  {/* Washing */}
-                  <div className="space-y-4">
-                    <div className="flex items-center gap-2 mb-4">
-                      <Droplet className="w-6 h-6 text-blue-600" />
-                      <h3 className="text-xl font-bold text-foreground">
-                        Washing
-                      </h3>
-                    </div>
-                    <div className="space-y-3">
-                      {careLabel.washingInstructions.map((instruction, idx) => (
-                        <div
-                          key={idx}
-                          className="p-3 bg-blue-50/50 border border-blue-200/30 rounded-lg flex gap-3"
-                        >
-                          <div className="w-6 h-6 rounded-full bg-blue-600 text-white flex items-center justify-center flex-shrink-0 text-sm font-bold">
-                            {idx + 1}
-                          </div>
-                          <p className="text-foreground/80 text-sm">
-                            {instruction}
-                          </p>
-                        </div>
-                      ))}
-                    </div>
-                    <div className="p-3 bg-amber-50/50 border border-amber-200/30 rounded-lg flex gap-2 items-start">
-                      <Thermometer className="w-5 h-5 text-amber-600 flex-shrink-0 mt-0.5" />
-                      <div>
-                        <p className="text-sm font-semibold text-amber-900">
-                          Temperature
-                        </p>
-                        <p className="text-sm text-amber-800">
-                          {careLabel.temperature}
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Drying & Ironing */}
-                  <div className="space-y-4">
-                    <div>
-                      <div className="flex items-center gap-2 mb-4">
-                        <Shirt className="w-6 h-6 text-green-600" />
-                        <h3 className="text-xl font-bold text-foreground">
-                          Drying
-                        </h3>
-                      </div>
-                      <div className="space-y-3">
-                        {careLabel.dryingInstructions.map(
-                          (instruction, idx) => (
-                            <div
-                              key={idx}
-                              className="p-3 bg-green-50/50 border border-green-200/30 rounded-lg flex gap-3"
-                            >
-                              <div className="w-6 h-6 rounded-full bg-green-600 text-white flex items-center justify-center flex-shrink-0 text-sm font-bold">
-                                {idx + 1}
-                              </div>
-                              <p className="text-foreground/80 text-sm">
-                                {instruction}
-                              </p>
-                            </div>
-                          ),
-                        )}
-                      </div>
-                    </div>
-
-                    <div className="pt-4">
-                      <div className="flex items-center gap-2 mb-4">
-                        <AlertCircle className="w-6 h-6 text-orange-600" />
-                        <h3 className="text-xl font-bold text-foreground">
-                          Special Care
-                        </h3>
-                      </div>
-                      <div className="space-y-2">
-                        {careLabel.specialInstructions.map(
-                          (instruction, idx) => (
-                            <div
-                              key={idx}
-                              className="p-2 bg-orange-50/50 border border-orange-200/30 rounded-lg text-sm text-foreground/80 flex gap-2"
-                            >
-                              <span className="text-orange-600 font-bold">
-                                •
-                              </span>
-                              {instruction}
-                            </div>
-                          ),
-                        )}
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            )}
-          </section>
-
-          {/* Local Services */}
-          <section className="space-y-6">
-            <div>
-              <h2 className="text-2xl font-bold text-foreground mb-2">
-                🗺️ Find Local Services
-              </h2>
-              <p className="text-foreground/70">
-                Connect with trusted tailors, cobblers, and repair specialists
-              </p>
-            </div>
-
-            {/* Service Type Selection */}
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-              {serviceTypes.map((type) => (
-                <button
-                  key={type.id}
-                  onClick={() => setServiceType(type.id)}
-                  className={`p-4 rounded-lg border-2 transition-all text-center ${
-                    serviceType === type.id
-                      ? "border-primary bg-primary/10"
-                      : "border-border/30 bg-muted/20 hover:border-primary/50"
-                  }`}
-                >
-                  <div className="text-3xl mb-2">{type.emoji}</div>
-                  <div className="font-semibold text-sm text-foreground">
-                    {type.label}
-                  </div>
-                </button>
-              ))}
-            </div>
-
-            {/* Services List */}
-            <div className="grid md:grid-cols-2 gap-6">
-              {services.map((service) => (
-                <div
-                  key={service.id}
-                  className="card-base p-6 space-y-4 hover:shadow-lg transition-all animate-slide-up"
-                >
-                  <div className="flex items-start justify-between">
-                    <div>
-                      <h3 className="text-lg font-bold text-foreground">
-                        {service.name}
-                      </h3>
-                      <div className="flex items-center gap-2 mt-2">
-                        <div className="flex items-center gap-1">
-                          {[...Array(5)].map((_, i) => (
-                            <Star
-                              key={i}
-                              className={`w-4 h-4 ${
-                                i < Math.floor(service.rating)
-                                  ? "fill-yellow-400 text-yellow-400"
-                                  : "text-border/30"
-                              }`}
+        {/* Care Instructions Tab */}
+        {activeTab === "care" && (
+          <div className="space-y-6 animate-fadeIn">
+            <Card className="border-border/50 shadow-lg hover:shadow-xl transition-shadow duration-300">
+              <CardHeader>
+                <CardTitle className="flex items-center justify-between">
+                  <span className="flex items-center gap-2">
+                    <Sparkles className="w-5 h-5 text-primary" />
+                    Smart Care Labels
+                  </span>
+                  <Dialog open={isCareDialogOpen} onOpenChange={setIsCareDialogOpen}>
+                    <DialogTrigger asChild>
+                      <Button size="sm" onClick={() => setIsCareDialogOpen(true)}>
+                        <Edit className="w-4 h-4 mr-2" />
+                        {careInstructions ? "Edit" : "Add"} Instructions
+                      </Button>
+                    </DialogTrigger>
+                    <DialogContent className="max-w-2xl">
+                      <DialogHeader>
+                        <DialogTitle>
+                          {careInstructions ? "Edit" : "Add"} Care Instructions
+                        </DialogTitle>
+                        <DialogDescription>
+                          Provide detailed care instructions for this garment to help extend its life
+                        </DialogDescription>
+                      </DialogHeader>
+                      
+                      <div className="grid gap-4 py-4">
+                        <div className="grid grid-cols-4 items-center gap-4">
+                          <Label htmlFor="fabricType" className="text-right">
+                            Fabric Type
+                          </Label>
+                          <div className="col-span-3">
+                            <Input
+                              id="fabricType"
+                              value={careForm.fabricType}
+                              onChange={(e) => setCareForm({...careForm, fabricType: e.target.value})}
+                              placeholder="e.g., Cotton, Polyester, Silk"
                             />
-                          ))}
+                          </div>
                         </div>
-                        <span className="text-sm text-foreground/70">
-                          {service.rating} ({service.reviews} reviews)
-                        </span>
+                        
+                        <div className="grid grid-cols-4 items-start gap-4">
+                          <Label htmlFor="washing" className="text-right pt-2">
+                            Washing
+                          </Label>
+                          <div className="col-span-3">
+                            <Textarea
+                              id="washing"
+                              value={careForm.washingInstructions}
+                              onChange={(e) => setCareForm({...careForm, washingInstructions: e.target.value})}
+                              placeholder="Washing instructions..."
+                              className="min-h-[80px]"
+                            />
+                          </div>
+                        </div>
+                        
+                        <div className="grid grid-cols-4 items-start gap-4">
+                          <Label htmlFor="drying" className="text-right pt-2">
+                            Drying
+                          </Label>
+                          <div className="col-span-3">
+                            <Textarea
+                              id="drying"
+                              value={careForm.dryingInstructions}
+                              onChange={(e) => setCareForm({...careForm, dryingInstructions: e.target.value})}
+                              placeholder="Drying instructions..."
+                              className="min-h-[80px]"
+                            />
+                          </div>
+                        </div>
+                        
+                        <div className="grid grid-cols-4 items-start gap-4">
+                          <Label htmlFor="ironing" className="text-right pt-2">
+                            Ironing
+                          </Label>
+                          <div className="col-span-3">
+                            <Textarea
+                              id="ironing"
+                              value={careForm.ironingInstructions}
+                              onChange={(e) => setCareForm({...careForm, ironingInstructions: e.target.value})}
+                              placeholder="Ironing instructions..."
+                              className="min-h-[80px]"
+                            />
+                          </div>
+                        </div>
+                        
+                        <div className="grid grid-cols-4 items-start gap-4">
+                          <Label htmlFor="specialNotes" className="text-right pt-2">
+                            Special Notes
+                          </Label>
+                          <div className="col-span-3">
+                            <Textarea
+                              id="specialNotes"
+                              value={careForm.specialCareNotes}
+                              onChange={(e) => setCareForm({...careForm, specialCareNotes: e.target.value})}
+                              placeholder="Any special care notes..."
+                              className="min-h-[80px]"
+                            />
+                          </div>
+                        </div>
                       </div>
+                      
+                      <DialogFooter>
+                        <Button variant="outline" onClick={() => setIsCareDialogOpen(false)}>
+                          Cancel
+                        </Button>
+                        <Button onClick={handleSaveCareInstructions} disabled={saving}>
+                          {saving ? "Saving..." : "Save Instructions"}
+                        </Button>
+                      </DialogFooter>
+                    </DialogContent>
+                  </Dialog>
+                </CardTitle>
+                <CardDescription>
+                  Digital, searchable care instructions for each item
+                </CardDescription>
+              </CardHeader>
+              
+              <CardContent>
+                {careInstructions ? (
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                      <h3 className="font-semibold text-foreground mb-2">Fabric Type</h3>
+                      <p className="text-foreground/80 bg-muted p-3 rounded-lg">
+                        {careInstructions.fabricType}
+                      </p>
                     </div>
-                    <div className="text-sm font-bold text-primary bg-primary/10 px-3 py-1 rounded-full">
-                      {service.distance}km
+                    
+                    <div>
+                      <h3 className="font-semibold text-foreground mb-2">Washing Instructions</h3>
+                      <p className="text-foreground/80 bg-muted p-3 rounded-lg">
+                        {careInstructions.washingInstructions}
+                      </p>
                     </div>
+                    
+                    <div>
+                      <h3 className="font-semibold text-foreground mb-2">Drying Instructions</h3>
+                      <p className="text-foreground/80 bg-muted p-3 rounded-lg">
+                        {careInstructions.dryingInstructions}
+                      </p>
+                    </div>
+                    
+                    <div>
+                      <h3 className="font-semibold text-foreground mb-2">Ironing Instructions</h3>
+                      <p className="text-foreground/80 bg-muted p-3 rounded-lg">
+                        {careInstructions.ironingInstructions}
+                      </p>
+                    </div>
+                    
+                    {careInstructions.specialCareNotes && (
+                      <div className="md:col-span-2">
+                        <h3 className="font-semibold text-foreground mb-2">Special Care Notes</h3>
+                        <p className="text-foreground/80 bg-muted p-3 rounded-lg">
+                          {careInstructions.specialCareNotes}
+                        </p>
+                      </div>
+                    )}
                   </div>
-
-                  {/* Contact Info */}
-                  <div className="space-y-2">
-                    <div className="flex items-start gap-3 text-sm">
-                      <MapPin className="w-5 h-5 text-foreground/50 flex-shrink-0 mt-0.5" />
-                      <p className="text-foreground/80">{service.address}</p>
-                    </div>
-                    <div className="flex items-center gap-3 text-sm">
-                      <Phone className="w-5 h-5 text-foreground/50 flex-shrink-0" />
-                      <a
-                        href={`tel:${service.phone}`}
-                        className="text-primary hover:text-primary/80 font-semibold"
-                      >
-                        {service.phone}
-                      </a>
-                    </div>
-                    <div className="flex items-start gap-3 text-sm">
-                      <Clock className="w-5 h-5 text-foreground/50 flex-shrink-0 mt-0.5" />
-                      <p className="text-foreground/80">{service.hours}</p>
-                    </div>
+                ) : (
+                  <div className="text-center py-12">
+                    <Shirt className="w-16 h-16 text-foreground/20 mx-auto mb-4" />
+                    <h3 className="text-lg font-medium text-foreground mb-2">No Care Instructions</h3>
+                    <p className="text-foreground/70 mb-4">
+                      Add care instructions for this garment to help extend its life
+                    </p>
+                    <Button onClick={() => setIsCareDialogOpen(true)}>
+                      <Plus className="w-4 h-4 mr-2" />
+                      Add Instructions
+                    </Button>
                   </div>
+                )}
+              </CardContent>
+            </Card>
+          </div>
+        )}
 
-                  {/* Specialties */}
-                  <div className="flex flex-wrap gap-2 pt-2">
-                    {service.specialties.map((specialty, idx) => (
-                      <span
-                        key={idx}
-                        className="px-3 py-1 bg-primary/10 text-primary rounded-full text-xs font-semibold"
-                      >
-                        {specialty}
-                      </span>
+        {/* Repair Log Tab */}
+        {activeTab === "repair" && (
+          <div className="space-y-6 animate-fadeIn">
+            <Card className="border-border/50 shadow-lg hover:shadow-xl transition-shadow duration-300">
+              <CardHeader>
+                <CardTitle className="flex items-center justify-between">
+                  <span className="flex items-center gap-2">
+                    <Settings className="w-5 h-5 text-primary" />
+                    Repair & Alteration Log
+                  </span>
+                  <Dialog open={isRepairDialogOpen} onOpenChange={setIsRepairDialogOpen}>
+                    <DialogTrigger asChild>
+                      <Button size="sm" onClick={() => setIsRepairDialogOpen(true)}>
+                        <Plus className="w-4 h-4 mr-2" />
+                        Add Entry
+                      </Button>
+                    </DialogTrigger>
+                    <DialogContent className="max-w-2xl">
+                      <DialogHeader>
+                        <DialogTitle>Add Repair Log Entry</DialogTitle>
+                        <DialogDescription>
+                          Track when an item was repaired, tailored, or upcycled
+                        </DialogDescription>
+                      </DialogHeader>
+                      
+                      <div className="grid gap-4 py-4">
+                        <div className="grid grid-cols-4 items-center gap-4">
+                          <Label htmlFor="repairType" className="text-right">
+                            Type
+                          </Label>
+                          <div className="col-span-3">
+                            <Select 
+                              value={repairForm.repairType} 
+                              onValueChange={(value) => setRepairForm({...repairForm, repairType: value as any})}
+                            >
+                              <SelectTrigger>
+                                <SelectValue placeholder="Select repair type" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="repair">Repair</SelectItem>
+                                <SelectItem value="alteration">Alteration</SelectItem>
+                                <SelectItem value="upcycling">Upcycling</SelectItem>
+                              </SelectContent>
+                            </Select>
+                          </div>
+                        </div>
+                        
+                        <div className="grid grid-cols-4 items-center gap-4">
+                          <Label htmlFor="description" className="text-right">
+                            Description
+                          </Label>
+                          <div className="col-span-3">
+                            <Input
+                              id="description"
+                              value={repairForm.description}
+                              onChange={(e) => setRepairForm({...repairForm, description: e.target.value})}
+                              placeholder="What was done?"
+                            />
+                          </div>
+                        </div>
+                        
+                        <div className="grid grid-cols-4 items-center gap-4">
+                          <Label htmlFor="date" className="text-right">
+                            Date
+                          </Label>
+                          <div className="col-span-3">
+                            <Input
+                              id="date"
+                              type="date"
+                              value={repairForm.date}
+                              onChange={(e) => setRepairForm({...repairForm, date: e.target.value})}
+                            />
+                          </div>
+                        </div>
+                        
+                        <div className="grid grid-cols-4 items-center gap-4">
+                          <Label htmlFor="cost" className="text-right">
+                            Cost ($)
+                          </Label>
+                          <div className="col-span-3">
+                            <Input
+                              id="cost"
+                              type="number"
+                              value={repairForm.cost}
+                              onChange={(e) => setRepairForm({...repairForm, cost: parseFloat(e.target.value) || 0})}
+                              placeholder="0.00"
+                            />
+                          </div>
+                        </div>
+                        
+                        <div className="grid grid-cols-4 items-center gap-4">
+                          <Label htmlFor="serviceProvider" className="text-right">
+                            Service Provider
+                          </Label>
+                          <div className="col-span-3">
+                            <Input
+                              id="serviceProvider"
+                              value={repairForm.serviceProvider}
+                              onChange={(e) => setRepairForm({...repairForm, serviceProvider: e.target.value})}
+                              placeholder="Name of tailor, cobbler, etc."
+                            />
+                          </div>
+                        </div>
+                        
+                        <div className="grid grid-cols-4 items-start gap-4">
+                          <Label htmlFor="notes" className="text-right pt-2">
+                            Notes
+                          </Label>
+                          <div className="col-span-3">
+                            <Textarea
+                              id="notes"
+                              value={repairForm.notes}
+                              onChange={(e) => setRepairForm({...repairForm, notes: e.target.value})}
+                              placeholder="Additional notes..."
+                              className="min-h-[80px]"
+                            />
+                          </div>
+                        </div>
+                      </div>
+                      
+                      <DialogFooter>
+                        <Button variant="outline" onClick={() => setIsRepairDialogOpen(false)}>
+                          Cancel
+                        </Button>
+                        <Button onClick={handleAddRepairLog} disabled={saving}>
+                          {saving ? "Adding..." : "Add Entry"}
+                        </Button>
+                      </DialogFooter>
+                    </DialogContent>
+                  </Dialog>
+                </CardTitle>
+                <CardDescription>
+                  Track when an item was repaired, tailored, or upcycled
+                </CardDescription>
+              </CardHeader>
+              
+              <CardContent>
+                {repairLogs.length > 0 ? (
+                  <div className="space-y-4">
+                    {repairLogs.map((log) => (
+                      <div key={log._id} className="border border-border/50 rounded-lg p-4 hover:bg-muted/50 transition-colors">
+                        <div className="flex justify-between items-start">
+                          <div>
+                            <div className="flex items-center gap-2 mb-1">
+                              <Badge variant="secondary" className="capitalize">
+                                {log.repairType}
+                              </Badge>
+                              <span className="text-sm text-foreground/70">
+                                {new Date(log.date).toLocaleDateString()}
+                              </span>
+                            </div>
+                            <h3 className="font-medium text-foreground">{log.description}</h3>
+                            {log.serviceProvider && (
+                              <p className="text-sm text-foreground/70 mt-1">
+                                Service Provider: {log.serviceProvider}
+                              </p>
+                            )}
+                            {log.cost > 0 && (
+                              <p className="text-sm text-foreground/70 mt-1">
+                                Cost: ${log.cost.toFixed(2)}
+                              </p>
+                            )}
+                            {log.notes && (
+                              <p className="text-sm text-foreground/70 mt-2">
+                                {log.notes}
+                              </p>
+                            )}
+                          </div>
+                          <Button 
+                            variant="ghost" 
+                            size="sm" 
+                            onClick={() => handleDeleteRepairLog(log._id)}
+                            className="text-foreground/50 hover:text-destructive"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </Button>
+                        </div>
+                      </div>
                     ))}
                   </div>
-
-                  {/* Action Buttons */}
-                  <div className="grid grid-cols-2 gap-3 pt-2">
-                    <a
-                      href={`tel:${service.phone}`}
-                      className="py-2 bg-primary text-primary-foreground rounded-lg text-center font-semibold hover:bg-primary/90 transition-all text-sm"
-                    >
-                      Call
-                    </a>
-                    <button className="py-2 border border-primary text-primary rounded-lg font-semibold hover:bg-primary/10 transition-all text-sm">
-                      Message
-                    </button>
+                ) : (
+                  <div className="text-center py-12">
+                    <Settings className="w-16 h-16 text-foreground/20 mx-auto mb-4" />
+                    <h3 className="text-lg font-medium text-foreground mb-2">No Repair History</h3>
+                    <p className="text-foreground/70 mb-4">
+                      Track repairs, alterations, and upcycling to extend your garment's life
+                    </p>
+                    <Button onClick={() => setIsRepairDialogOpen(true)}>
+                      <Plus className="w-4 h-4 mr-2" />
+                      Add Entry
+                    </Button>
                   </div>
-                </div>
-              ))}
-            </div>
-          </section>
+                )}
+              </CardContent>
+            </Card>
+          </div>
+        )}
 
-          {/* Repair Tips */}
-          <section className="bg-gradient-to-r from-primary/10 to-nature/10 rounded-2xl border border-primary/20 p-8 space-y-6">
-            <div className="flex items-center gap-3">
-              <Wrench className="w-8 h-8 text-primary" />
-              <h2 className="text-2xl font-bold text-foreground">
-                💭 Repair Tips
-              </h2>
-            </div>
-
-            <div className="grid md:grid-cols-2 gap-6">
-              {[
-                {
-                  title: "Prevent Pilling",
-                  tip: "Turn garments inside out before washing to reduce friction and pilling.",
-                },
-                {
-                  title: "Handle Zippers",
-                  tip: "Keep zippers closed during washing. If stuck, use graphite pencil lubricant.",
-                },
-                {
-                  title: "Fabric Care",
-                  tip: "Always check care labels first. Different fabrics require different treatments.",
-                },
-                {
-                  title: "Stain Removal",
-                  tip: "Treat stains immediately with cold water. Hot water can set them permanently.",
-                },
-              ].map((item, idx) => (
-                <div
-                  key={idx}
-                  className="p-4 bg-card border border-border/50 rounded-lg space-y-2 hover:border-primary/30 transition-all"
-                >
-                  <p className="font-semibold text-foreground">{item.title}</p>
-                  <p className="text-sm text-foreground/70">{item.tip}</p>
+        {/* Local Services Tab */}
+        {activeTab === "services" && (
+          <div className="space-y-6 animate-fadeIn">
+            <Card className="border-border/50 shadow-lg hover:shadow-xl transition-shadow duration-300">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <MapPin className="w-5 h-5 text-primary" />
+                  Local Tailor & Cobbler Finder
+                </CardTitle>
+                <CardDescription>
+                  Find local services that help maintain your clothing
+                </CardDescription>
+              </CardHeader>
+              
+              <CardContent>
+                <div className="flex flex-col sm:flex-row gap-4 mb-6">
+                  <div className="relative flex-1">
+                    <Search className="absolute left-3 top-3 w-4 h-4 text-foreground/50" />
+                    <Input
+                      id="search-services"
+                      placeholder="Search by name, service, or location..."
+                      className="pl-10"
+                      value={serviceFilter.search}
+                      onChange={(e) => setServiceFilter({...serviceFilter, search: e.target.value})}
+                      aria-label="Search service providers"
+                    />
+                  </div>
+                  
+                  <div className="w-full sm:w-48">
+                    <Select 
+                      value={serviceFilter.type} 
+                      onValueChange={(value) => setServiceFilter({...serviceFilter, type: value})}
+                    >
+                      <SelectTrigger>
+                        <Filter className="w-4 h-4 mr-2" />
+                        <SelectValue placeholder="Filter by type" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="">All Types</SelectItem>
+                        <SelectItem value="tailor">Tailors</SelectItem>
+                        <SelectItem value="cobbler">Cobblers</SelectItem>
+                        <SelectItem value="cleaner">Cleaners</SelectItem>
+                        <SelectItem value="other">Other Services</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  
+                  <Button onClick={fetchServiceProviders} variant="outline">
+                    Search
+                  </Button>
                 </div>
-              ))}
-            </div>
-          </section>
-        </div>
-      </main>
-    </Layout>
+                
+                {loading ? (
+                  <div className="flex justify-center py-12">
+                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+                  </div>
+                ) : filteredServiceProviders.length > 0 ? (
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    {filteredServiceProviders.map((provider) => (
+                      <Card key={provider._id} className="hover:shadow-lg transition-shadow duration-300">
+                        <CardHeader>
+                          <CardTitle className="flex items-center justify-between">
+                            <span className="text-lg">{provider.name}</span>
+                            <Badge variant="secondary" className="capitalize">
+                              {provider.type}
+                            </Badge>
+                          </CardTitle>
+                          <CardDescription>
+                            <div className="flex items-center gap-1">
+                              <MapPin className="w-4 h-4" />
+                              <span>{provider.address}</span>
+                            </div>
+                          </CardDescription>
+                        </CardHeader>
+                        
+                        <CardContent>
+                          <div className="space-y-3">
+                            <div className="flex items-center justify-between">
+                              <div className="flex items-center gap-1">
+                                <Star className="w-4 h-4 fill-yellow-400 text-yellow-400" />
+                                <span className="font-medium">{provider.rating.toFixed(1)}</span>
+                                <span className="text-foreground/50">({provider.reviews} reviews)</span>
+                              </div>
+                            </div>
+                            
+                            {provider.phone && (
+                              <div className="text-sm">
+                                <span className="font-medium">Phone:</span> {provider.phone}
+                              </div>
+                            )}
+                            
+                            {provider.website && (
+                              <div className="text-sm">
+                                <span className="font-medium">Website:</span>{" "}
+                                <a 
+                                  href={provider.website} 
+                                  target="_blank" 
+                                  rel="noopener noreferrer"
+                                  className="text-primary hover:underline"
+                                >
+                                  {provider.website}
+                                </a>
+                              </div>
+                            )}
+                            
+                            {provider.specialties.length > 0 && (
+                              <div>
+                                <span className="font-medium text-sm">Specialties:</span>
+                                <div className="flex flex-wrap gap-1 mt-1">
+                                  {provider.specialties.map((spec, index) => (
+                                    <Badge key={index} variant="outline" className="text-xs">
+                                      {spec}
+                                    </Badge>
+                                  ))}
+                                </div>
+                              </div>
+                            )}
+                          </div>
+                        </CardContent>
+                      </Card>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="text-center py-12">
+                    <MapPin className="w-16 h-16 text-foreground/20 mx-auto mb-4" />
+                    <h3 className="text-lg font-medium text-foreground mb-2">No Service Providers Found</h3>
+                    <p className="text-foreground/70">
+                      Try adjusting your search or filter criteria
+                    </p>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </div>
+        )}
+      </div>
+    </div>
   );
 }

@@ -1,45 +1,47 @@
 import { RequestHandler } from "express";
-import { SwapListing, SwapRequest } from "../models/index";
+import { MarketplaceListing, SwapRequest } from "../models";
 
-// Create swap listing
-export const createSwapListing: RequestHandler = async (req, res) => {
+// Create a new marketplace listing
+export const createListing: RequestHandler = async (req, res) => {
   try {
-    const {
-      userId,
-      itemId,
-      title,
-      description,
-      condition,
-      size,
-      brand,
-      category,
-      imageUrl,
-      desiredItems,
+    const { 
+      userId, 
+      clothingItemId, 
+      title, 
+      description, 
+      price, 
+      condition, 
+      category, 
+      size, 
+      brand, 
+      color, 
+      material, 
+      images, 
+      listingType,
+      ecoScore
     } = req.body;
-
-    if (!userId || !itemId || !title || !condition) {
-      res.status(400).json({
-        error: "Missing required fields",
-      });
-      return;
-    }
-
-    const listing = new SwapListing({
+    
+    const listing = new MarketplaceListing({
       userId,
-      itemId,
+      clothingItemId,
       title,
       description,
+      price,
       condition,
+      category,
       size,
       brand,
-      category,
-      imageUrl,
-      desiredItems: desiredItems || [],
-      status: "active",
+      color,
+      material,
+      images: images || [],
+      listingType,
+      ecoScore: ecoScore || 0,
+      views: 0,
+      likes: 0,
     });
-
+    
     await listing.save();
-
+    
     res.status(201).json({
       success: true,
       data: listing,
@@ -50,23 +52,37 @@ export const createSwapListing: RequestHandler = async (req, res) => {
   }
 };
 
-// Get all active listings
+// Get all active marketplace listings
 export const getAllListings: RequestHandler = async (req, res) => {
   try {
-    const { category, condition, sort } = req.query;
-
-    const query: Record<string, any> = { status: "active" };
-
-    if (category) query.category = category;
-    if (condition) query.condition = condition;
-
-    const listings = await SwapListing.find(query)
-      .sort(sort === "recent" ? { createdAt: -1 } : { rating: -1 })
+    const { category, size, condition, minPrice, maxPrice, listingType, search } = req.query;
+    
+    // Build filter object
+    const filter: any = { status: "active" };
+    
+    if (category) filter.category = category;
+    if (size) filter.size = size;
+    if (condition) filter.condition = condition;
+    if (listingType) filter.listingType = listingType;
+    if (minPrice || maxPrice) {
+      filter.price = {};
+      if (minPrice) filter.price.$gte = Number(minPrice);
+      if (maxPrice) filter.price.$lte = Number(maxPrice);
+    }
+    if (search) {
+      filter.$or = [
+        { title: { $regex: search, $options: "i" } },
+        { description: { $regex: search, $options: "i" } },
+        { brand: { $regex: search, $options: "i" } },
+      ];
+    }
+    
+    const listings = await MarketplaceListing.find(filter)
+      .sort({ createdAt: -1 })
       .limit(50);
-
+    
     res.json({
       success: true,
-      count: listings.length,
       data: listings,
     });
   } catch (error) {
@@ -75,40 +91,21 @@ export const getAllListings: RequestHandler = async (req, res) => {
   }
 };
 
-// Get user's listings
-export const getUserListings: RequestHandler = async (req, res) => {
-  try {
-    const { userId } = req.params;
-
-    const listings = await SwapListing.find({ userId }).sort({
-      createdAt: -1,
-    });
-
-    res.json({
-      success: true,
-      count: listings.length,
-      data: listings,
-    });
-  } catch (error) {
-    console.error("Fetch user listings error:", error);
-    res.status(500).json({ error: "Failed to fetch listings" });
-  }
-};
-
-// Get single listing
+// Get a specific listing by ID
 export const getListing: RequestHandler = async (req, res) => {
   try {
     const { listingId } = req.params;
-
-    const listing = await SwapListing.findById(listingId).populate(
-      "swapRequests"
-    );
-
+    
+    const listing = await MarketplaceListing.findById(listingId);
+    
     if (!listing) {
-      res.status(404).json({ error: "Listing not found" });
-      return;
+      return res.status(404).json({ error: "Listing not found" });
     }
-
+    
+    // Increment view count
+    listing.views += 1;
+    await listing.save();
+    
     res.json({
       success: true,
       data: listing,
@@ -119,157 +116,222 @@ export const getListing: RequestHandler = async (req, res) => {
   }
 };
 
-// Create swap request
-export const createSwapRequest: RequestHandler = async (req, res) => {
-  try {
-    const { listingId, fromUserId, offeredItemId, desiredItemId, message } =
-      req.body;
-
-    if (!listingId || !fromUserId || !offeredItemId || !desiredItemId) {
-      res.status(400).json({
-        error: "Missing required fields",
-      });
-      return;
-    }
-
-    const listing = await SwapListing.findById(listingId);
-    if (!listing) {
-      res.status(404).json({ error: "Listing not found" });
-      return;
-    }
-
-    const request = new SwapRequest({
-      listingId,
-      fromUserId,
-      toUserId: listing.userId,
-      offeredItemId,
-      desiredItemId,
-      message,
-      status: "pending",
-    });
-
-    await request.save();
-
-    // Add to listing's swap requests
-    listing.swapRequests.push(request._id);
-    await listing.save();
-
-    res.status(201).json({
-      success: true,
-      data: request,
-    });
-  } catch (error) {
-    console.error("Create request error:", error);
-    res.status(500).json({ error: "Failed to create swap request" });
-  }
-};
-
-// Get swap requests for user
-export const getUserSwapRequests: RequestHandler = async (req, res) => {
+// Get listings by user ID
+export const getUserListings: RequestHandler = async (req, res) => {
   try {
     const { userId } = req.params;
-
-    const requests = await SwapRequest.find({
-      $or: [{ fromUserId: userId }, { toUserId: userId }],
-    }).sort({ createdAt: -1 });
-
+    
+    const listings = await MarketplaceListing.find({ userId })
+      .sort({ createdAt: -1 });
+    
     res.json({
       success: true,
-      count: requests.length,
-      data: requests,
+      data: listings,
     });
   } catch (error) {
-    console.error("Fetch requests error:", error);
-    res.status(500).json({ error: "Failed to fetch requests" });
+    console.error("Fetch user listings error:", error);
+    res.status(500).json({ error: "Failed to fetch user listings" });
   }
 };
 
-// Accept swap request
-export const acceptSwapRequest: RequestHandler = async (req, res) => {
-  try {
-    const { requestId } = req.params;
-
-    const request = await SwapRequest.findByIdAndUpdate(
-      requestId,
-      { status: "accepted" },
-      { new: true }
-    );
-
-    if (!request) {
-      res.status(404).json({ error: "Request not found" });
-      return;
-    }
-
-    res.json({
-      success: true,
-      data: request,
-    });
-  } catch (error) {
-    console.error("Accept request error:", error);
-    res.status(500).json({ error: "Failed to accept request" });
-  }
-};
-
-// Reject swap request
-export const rejectSwapRequest: RequestHandler = async (req, res) => {
-  try {
-    const { requestId } = req.params;
-
-    const request = await SwapRequest.findByIdAndUpdate(
-      requestId,
-      { status: "rejected" },
-      { new: true }
-    );
-
-    if (!request) {
-      res.status(404).json({ error: "Request not found" });
-      return;
-    }
-
-    res.json({
-      success: true,
-      data: request,
-    });
-  } catch (error) {
-    console.error("Reject request error:", error);
-    res.status(500).json({ error: "Failed to reject request" });
-  }
-};
-
-// Rate listing
-export const rateListing: RequestHandler = async (req, res) => {
+// Update a listing
+export const updateListing: RequestHandler = async (req, res) => {
   try {
     const { listingId } = req.params;
-    const { rating, review } = req.body;
-
-    if (rating < 1 || rating > 5) {
-      res.status(400).json({ error: "Rating must be between 1 and 5" });
-      return;
-    }
-
-    const listing = await SwapListing.findById(listingId);
-
+    const updateData = req.body;
+    
+    const listing = await MarketplaceListing.findByIdAndUpdate(
+      listingId,
+      updateData,
+      { new: true }
+    );
+    
     if (!listing) {
-      res.status(404).json({ error: "Listing not found" });
-      return;
+      return res.status(404).json({ error: "Listing not found" });
     }
-
-    // Update rating (simple average)
-    const currentTotal = listing.rating * (listing.reviews.length || 1);
-    listing.rating = (currentTotal + rating) / (listing.reviews.length + 1);
-
-    if (review) {
-      listing.reviews.push(review);
-    }
-
-    await listing.save();
-
+    
     res.json({
       success: true,
       data: listing,
     });
   } catch (error) {
-    console.error("Rate listing error:", error);
-    res.status(500).json({ error: "Failed to rate listing" });
+    console.error("Update listing error:", error);
+    res.status(500).json({ error: "Failed to update listing" });
+  }
+};
+
+// Delete a listing
+export const deleteListing: RequestHandler = async (req, res) => {
+  try {
+    const { listingId } = req.params;
+    
+    const listing = await MarketplaceListing.findByIdAndDelete(listingId);
+    
+    if (!listing) {
+      return res.status(404).json({ error: "Listing not found" });
+    }
+    
+    res.json({
+      success: true,
+      message: "Listing deleted successfully",
+    });
+  } catch (error) {
+    console.error("Delete listing error:", error);
+    res.status(500).json({ error: "Failed to delete listing" });
+  }
+};
+
+// Create a swap request
+export const createSwapRequest: RequestHandler = async (req, res) => {
+  try {
+    const { fromUserId, toUserId, fromListingId, toListingId, message } = req.body;
+    
+    const swapRequest = new SwapRequest({
+      fromUserId,
+      toUserId,
+      fromListingId,
+      toListingId,
+      message,
+    });
+    
+    await swapRequest.save();
+    
+    res.status(201).json({
+      success: true,
+      data: swapRequest,
+    });
+  } catch (error) {
+    console.error("Create swap request error:", error);
+    res.status(500).json({ error: "Failed to create swap request" });
+  }
+};
+
+// Get swap requests for a user
+export const getUserSwapRequests: RequestHandler = async (req, res) => {
+  try {
+    const { userId } = req.params;
+    
+    const swapRequests = await SwapRequest.find({
+      $or: [{ fromUserId: userId }, { toUserId: userId }]
+    })
+    .sort({ createdAt: -1 })
+    .populate("fromListingId")
+    .populate("toListingId");
+    
+    res.json({
+      success: true,
+      data: swapRequests,
+    });
+  } catch (error) {
+    console.error("Fetch swap requests error:", error);
+    res.status(500).json({ error: "Failed to fetch swap requests" });
+  }
+};
+
+// Accept a swap request
+export const acceptSwapRequest: RequestHandler = async (req, res) => {
+  try {
+    const { requestId } = req.params;
+    
+    const swapRequest = await SwapRequest.findByIdAndUpdate(
+      requestId,
+      { status: "accepted" },
+      { new: true }
+    );
+    
+    if (!swapRequest) {
+      return res.status(404).json({ error: "Swap request not found" });
+    }
+    
+    // Update listings status
+    await MarketplaceListing.updateMany(
+      { 
+        _id: { $in: [swapRequest.fromListingId, swapRequest.toListingId].filter(Boolean) }
+      },
+      { status: "swapped" }
+    );
+    
+    res.json({
+      success: true,
+      data: swapRequest,
+    });
+  } catch (error) {
+    console.error("Accept swap request error:", error);
+    res.status(500).json({ error: "Failed to accept swap request" });
+  }
+};
+
+// Reject a swap request
+export const rejectSwapRequest: RequestHandler = async (req, res) => {
+  try {
+    const { requestId } = req.params;
+    
+    const swapRequest = await SwapRequest.findByIdAndUpdate(
+      requestId,
+      { status: "rejected" },
+      { new: true }
+    );
+    
+    if (!swapRequest) {
+      return res.status(404).json({ error: "Swap request not found" });
+    }
+    
+    res.json({
+      success: true,
+      data: swapRequest,
+    });
+  } catch (error) {
+    console.error("Reject swap request error:", error);
+    res.status(500).json({ error: "Failed to reject swap request" });
+  }
+};
+
+// Mark a swap as completed
+export const completeSwap: RequestHandler = async (req, res) => {
+  try {
+    const { requestId } = req.params;
+    
+    const swapRequest = await SwapRequest.findByIdAndUpdate(
+      requestId,
+      { status: "completed" },
+      { new: true }
+    );
+    
+    if (!swapRequest) {
+      return res.status(404).json({ error: "Swap request not found" });
+    }
+    
+    res.json({
+      success: true,
+      data: swapRequest,
+    });
+  } catch (error) {
+    console.error("Complete swap error:", error);
+    res.status(500).json({ error: "Failed to complete swap" });
+  }
+};
+
+// Like a listing
+export const likeListing: RequestHandler = async (req, res) => {
+  try {
+    const { listingId } = req.params;
+    
+    const listing = await MarketplaceListing.findByIdAndUpdate(
+      listingId,
+      { $inc: { likes: 1 } },
+      { new: true }
+    );
+    
+    if (!listing) {
+      return res.status(404).json({ error: "Listing not found" });
+    }
+    
+    res.json({
+      success: true,
+      data: { likes: listing.likes },
+    });
+  } catch (error) {
+    console.error("Like listing error:", error);
+    res.status(500).json({ error: "Failed to like listing" });
   }
 };

@@ -1,538 +1,830 @@
-import { useState } from "react";
-import Layout from "@/components/Layout";
-import {
-  Wand2,
-  Heart,
-  Share2,
-  ArrowRight,
-  Sparkles,
-  Cloud,
-  Loader,
-  Star,
-  Download,
+import { useState, useEffect, useRef } from "react";
+import { 
+  Sparkles, 
+  Plus, 
+  Save, 
+  Heart, 
+  Share2, 
+  Download, 
+  Move, 
+  RotateCcw, 
+  ZoomIn, 
+  ZoomOut,
+  Trash2,
+  Eye,
+  Lock,
+  Unlock,
+  Shirt
 } from "lucide-react";
-import { useGenerateOutfit, useGetUserOutfits, useToggleSaveOutfit, useRateOutfit } from "@/hooks/useApi";
 import { toast } from "sonner";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Badge } from "@/components/ui/badge";
+import { Separator } from "@/components/ui/separator";
+import { 
+  Dialog, 
+  DialogContent, 
+  DialogDescription, 
+  DialogFooter, 
+  DialogHeader, 
+  DialogTitle, 
+  DialogTrigger 
+} from "@/components/ui/dialog";
+import { useAuth } from "@/hooks/useAuth";
 
-const DEMO_USER_ID = "demo-user-123";
+interface ClothingItem {
+  _id: string;
+  userId: string;
+  title: string;
+  category: string;
+  color: string[];
+  brand?: string;
+  material?: string[];
+  description?: string;
+  imageUrl?: string;
+  ecoScore: number;
+  purchaseDate?: string;
+  createdAt: string;
+  updatedAt: string;
+}
 
-const occasions = [
+interface MoodboardItem {
+  id: string;
+  clothingItemId: string;
+  position: { x: number; y: number };
+  rotation: number;
+  scale: number;
+  clothingItem: ClothingItem;
+}
+
+interface Moodboard {
+  _id: string;
+  userId: string;
+  title: string;
+  mood: string;
+  description: string;
+  items: MoodboardItem[];
+  tags: string[];
+  isPublic: boolean;
+  likes: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
+const moodOptions = [
+  { id: "confident", label: "Confident", emoji: "💪" },
+  { id: "cozy", label: "Cozy", emoji: "🛋️" },
+  { id: "bold", label: "Bold", emoji: "🔥" },
+  { id: "elegant", label: "Elegant", emoji: "👑" },
   { id: "casual", label: "Casual", emoji: "👕" },
-  { id: "work", label: "Work", emoji: "💼" },
-  { id: "formal", label: "Formal", emoji: "🎩" },
-  { id: "party", label: "Party", emoji: "🎉" },
-  { id: "weekend", label: "Weekend", emoji: "🌞" },
-];
-
-const weatherOptions = [
-  { id: "sunny", label: "Sunny", emoji: "☀️" },
-  { id: "cloudy", label: "Cloudy", emoji: "☁️" },
-  { id: "rainy", label: "Rainy", emoji: "🌧️" },
-  { id: "cold", label: "Cold", emoji: "❄️" },
-  { id: "hot", label: "Hot", emoji: "🔥" },
-];
-
-const stylePreferences = [
-  "Minimalist",
-  "Bohemian",
-  "Classic",
-  "Trendy",
-  "Sporty",
-  "Vintage",
-  "Edgy",
-  "Elegant",
+  { id: "professional", label: "Professional", emoji: "💼" },
+  { id: "playful", label: "Playful", emoji: "🎨" },
+  { id: "minimalist", label: "Minimalist", emoji: "⚪" },
 ];
 
 export default function OutfitGenerator() {
-  const [selectedOccasion, setSelectedOccasion] = useState<string | null>(null);
-  const [selectedWeather, setSelectedWeather] = useState<string | null>(null);
-  const [selectedStyles, setSelectedStyles] = useState<string[]>([]);
-  const [showResults, setShowResults] = useState(false);
+  const { user } = useAuth();
+  
+  const [clothingItems, setClothingItems] = useState<ClothingItem[]>([]);
+  const [selectedMood, setSelectedMood] = useState("");
+  const [moodboards, setMoodboards] = useState<Moodboard[]>([]);
+  const [currentMoodboard, setCurrentMoodboard] = useState<Moodboard | null>(null);
+  const [isCreating, setIsCreating] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  
+  // Canvas state
+  const [canvasItems, setCanvasItems] = useState<MoodboardItem[]>([]);
+  const [selectedItem, setSelectedItem] = useState<string | null>(null);
+  const [draggingItem, setDraggingItem] = useState<string | null>(null);
+  const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
+  const canvasRef = useRef<HTMLDivElement>(null);
+  
+  // Form states
+  const [moodboardForm, setMoodboardForm] = useState({
+    title: "",
+    description: "",
+    isPublic: false,
+    tags: [] as string[]
+  });
 
-  const generateMutation = useGenerateOutfit();
-  const { data: outfitsData, refetch: refetchOutfits } = useGetUserOutfits(DEMO_USER_ID);
-  const saveOutfitMutation = useToggleSaveOutfit();
-  const rateOutfitMutation = useRateOutfit();
+  useEffect(() => {
+    fetchClothingItems();
+    fetchMoodboards();
+  }, [user?.userId]);
 
-  const handleGenerateOutfit = () => {
-    if (!selectedOccasion) {
-      toast.error("Please select an occasion");
-      return;
+  const fetchClothingItems = async () => {
+    if (!user?.userId) return;
+    
+    try {
+      setLoading(true);
+      const response = await fetch(`/api/clothing/user/${user.userId}`);
+      if (!response.ok) throw new Error("Failed to fetch clothing items");
+      
+      const data = await response.json();
+      setClothingItems(data.data);
+    } catch (error) {
+      console.error("Error fetching clothing items:", error);
+      toast.error("Failed to load your closet items");
+    } finally {
+      setLoading(false);
     }
+  };
 
-    generateMutation.mutate(
-      {
-        userId: DEMO_USER_ID,
-        occasion: selectedOccasion as any,
-        weather: selectedWeather || "Sunny",
-        stylePreferences: selectedStyles,
-      },
-      {
-        onSuccess: () => {
-          setShowResults(true);
-          refetchOutfits();
-          toast.success("Outfit generated successfully!");
-        },
-        onError: () => {
-          toast.error("Failed to generate outfit");
-        },
+  const fetchMoodboards = async () => {
+    if (!user?.userId) return;
+    
+    try {
+      const response = await fetch(`/api/moodboards/user/${user.userId}`);
+      if (!response.ok) throw new Error("Failed to fetch moodboards");
+      
+      const data = await response.json();
+      setMoodboards(data.data);
+    } catch (error) {
+      console.error("Error fetching moodboards:", error);
+      toast.error("Failed to load moodboards");
+    }
+  };
+
+  const generateMoodboard = async () => {
+    if (!selectedMood || !user?.userId) return;
+    
+    try {
+      setLoading(true);
+      const response = await fetch("/api/moodboards/generate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          userId: user.userId,
+          mood: selectedMood,
+          closetItems: clothingItems
+        })
+      });
+      
+      if (!response.ok) throw new Error("Failed to generate moodboard");
+      
+      const data = await response.json();
+      
+      // For now, we'll just create a new moodboard with the first suggestion
+      if (data.data && data.data.length > 0) {
+        const suggestion = data.data[0];
+        const newMoodboard: Moodboard = {
+          _id: `temp-${Date.now()}`,
+          userId: user.userId,
+          title: suggestion.title,
+          mood: selectedMood,
+          description: `AI-generated ${selectedMood} outfit`,
+          items: suggestion.items.map((item: ClothingItem, index: number) => ({
+            id: `item-${Date.now()}-${index}`,
+            clothingItemId: item._id,
+            position: { 
+              x: 100 + (index % 3) * 150, 
+              y: 100 + Math.floor(index / 3) * 200 
+            },
+            rotation: 0,
+            scale: 1,
+            clothingItem: item
+          })),
+          tags: suggestion.tags,
+          isPublic: false,
+          likes: 0,
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString()
+        };
+        
+        setCurrentMoodboard(newMoodboard);
+        setCanvasItems(newMoodboard.items);
+        setIsCreating(true);
       }
-    );
+      
+      toast.success("Moodboard generated successfully!");
+    } catch (error) {
+      console.error("Error generating moodboard:", error);
+      toast.error("Failed to generate moodboard");
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const handleToggleSaveOutfit = (outfitId: string) => {
-    saveOutfitMutation.mutate(outfitId, {
-      onSuccess: () => {
-        refetchOutfits();
-        toast.success("Outfit saved!");
-      },
-      onError: () => {
-        toast.error("Failed to save outfit");
-      },
-    });
+  const handleSaveMoodboard = async () => {
+    if (!currentMoodboard || !user?.userId) return;
+    
+    try {
+      setSaving(true);
+      const response = await fetch("/api/moodboards", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          ...currentMoodboard,
+          userId: user.userId,
+          items: canvasItems.map(item => ({
+            clothingItemId: item.clothingItemId,
+            position: item.position,
+            rotation: item.rotation,
+            scale: item.scale
+          }))
+        })
+      });
+      
+      if (!response.ok) throw new Error("Failed to save moodboard");
+      
+      const data = await response.json();
+      setCurrentMoodboard(data.data);
+      setMoodboards([data.data, ...moodboards]);
+      setIsCreating(false);
+      toast.success("Moodboard saved successfully!");
+    } catch (error) {
+      console.error("Error saving moodboard:", error);
+      toast.error("Failed to save moodboard");
+    } finally {
+      setSaving(false);
+    }
   };
 
-  const handleRateOutfit = (outfitId: string, rating: number) => {
-    rateOutfitMutation.mutate(
-      { outfitId, rating },
-      {
-        onSuccess: () => {
-          refetchOutfits();
-          toast.success(`Rated ${rating}/5`);
-        },
-        onError: () => {
-          toast.error("Failed to rate outfit");
-        },
+  const handleDeleteMoodboard = async (moodboardId: string) => {
+    try {
+      const response = await fetch(`/api/moodboards/${moodboardId}`, {
+        method: "DELETE"
+      });
+      
+      if (!response.ok) throw new Error("Failed to delete moodboard");
+      
+      setMoodboards(moodboards.filter(mb => mb._id !== moodboardId));
+      if (currentMoodboard?._id === moodboardId) {
+        setCurrentMoodboard(null);
+        setCanvasItems([]);
       }
-    );
+      toast.success("Moodboard deleted successfully!");
+    } catch (error) {
+      console.error("Error deleting moodboard:", error);
+      toast.error("Failed to delete moodboard");
+    }
   };
 
-  const toggleStyle = (style: string) => {
-    setSelectedStyles((prev) =>
-      prev.includes(style) ? prev.filter((s) => s !== style) : [...prev, style]
-    );
+  const handleAddToCanvas = (clothingItem: ClothingItem) => {
+    const newItem: MoodboardItem = {
+      id: `item-${Date.now()}`,
+      clothingItemId: clothingItem._id,
+      position: { x: 200, y: 200 },
+      rotation: 0,
+      scale: 1,
+      clothingItem
+    };
+    
+    setCanvasItems([...canvasItems, newItem]);
+    toast.success("Item added to canvas");
   };
 
-  const generatedOutfit = generateMutation.data?.data?.outfit;
-  const outfitDescription = generateMutation.data?.data?.description;
-  const suggestions = generateMutation.data?.data?.suggestions || [];
-  const weatherInfo = generateMutation.data?.data?.weatherInfo;
+  const handleCanvasMouseDown = (e: React.MouseEvent, itemId: string) => {
+    e.stopPropagation();
+    setSelectedItem(itemId);
+    setDraggingItem(itemId);
+    
+    const item = canvasItems.find(i => i.id === itemId);
+    if (item) {
+      const rect = (e.target as HTMLElement).getBoundingClientRect();
+      setDragOffset({
+        x: e.clientX - rect.left,
+        y: e.clientY - rect.top
+      });
+    }
+  };
+
+  const handleCanvasMouseMove = (e: React.MouseEvent) => {
+    if (!draggingItem || !canvasRef.current) return;
+    
+    const canvasRect = canvasRef.current.getBoundingClientRect();
+    const x = e.clientX - canvasRect.left - dragOffset.x;
+    const y = e.clientY - canvasRect.top - dragOffset.y;
+    
+    setCanvasItems(canvasItems.map(item => 
+      item.id === draggingItem 
+        ? { ...item, position: { x, y } } 
+        : item
+    ));
+  };
+
+  const handleCanvasMouseUp = () => {
+    setDraggingItem(null);
+  };
+
+  const handleRotateItem = (itemId: string, direction: "left" | "right") => {
+    setCanvasItems(canvasItems.map(item => 
+      item.id === itemId 
+        ? { 
+            ...item, 
+            rotation: item.rotation + (direction === "left" ? -15 : 15) 
+          } 
+        : item
+    ));
+  };
+
+  const handleScaleItem = (itemId: string, direction: "in" | "out") => {
+    setCanvasItems(canvasItems.map(item => 
+      item.id === itemId 
+        ? { 
+            ...item, 
+            scale: Math.max(0.5, Math.min(2, item.scale + (direction === "in" ? -0.1 : 0.1))) 
+          } 
+        : item
+    ));
+  };
+
+  const handleDeleteItem = (itemId: string) => {
+    setCanvasItems(canvasItems.filter(item => item.id !== itemId));
+    if (selectedItem === itemId) {
+      setSelectedItem(null);
+    }
+  };
+
+  const handleLikeMoodboard = async (moodboardId: string) => {
+    try {
+      const response = await fetch(`/api/moodboards/${moodboardId}/like`, {
+        method: "PUT"
+      });
+      
+      if (!response.ok) throw new Error("Failed to like moodboard");
+      
+      // Update the moodboard in state
+      setMoodboards(moodboards.map(mb => 
+        mb._id === moodboardId 
+          ? { ...mb, likes: mb.likes + 1 } 
+          : mb
+      ));
+      
+      toast.success("Liked!");
+    } catch (error) {
+      console.error("Error liking moodboard:", error);
+      toast.error("Failed to like moodboard");
+    }
+  };
 
   return (
-    <Layout>
-      <section className="w-full bg-gradient-to-b from-primary/5 to-background border-b border-border/40 py-8 md:py-12">
-        <div className="container max-w-7xl mx-auto px-4 md:px-6">
-          <h1 className="text-3xl md:text-4xl font-bold text-foreground">
-            AI Outfit Generator
-          </h1>
-          <p className="text-lg text-foreground/70 mt-2">
-            Get personalized outfit suggestions powered by AI
-          </p>
+    <div className="min-h-screen bg-gradient-to-br from-primary/5 via-background to-nature/5">
+      <div className="container py-8">
+        {/* Header */}
+        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-8">
+          <div>
+            <h1 className="text-3xl font-bold text-foreground flex items-center gap-2">
+              <Sparkles className="w-8 h-8 text-primary" />
+              AI Moodboard Generator
+            </h1>
+            <p className="text-foreground/70 mt-2">
+              Create visual outfit moodboards powered by AI
+            </p>
+          </div>
+          
+          <div className="flex gap-2">
+            <Select value={selectedMood} onValueChange={setSelectedMood}>
+              <SelectTrigger className="w-48">
+                <SelectValue placeholder="Select a mood" />
+              </SelectTrigger>
+              <SelectContent>
+                {moodOptions.map((mood) => (
+                  <SelectItem key={mood.id} value={mood.id}>
+                    <span className="flex items-center gap-2">
+                      <span>{mood.emoji}</span>
+                      <span>{mood.label}</span>
+                    </span>
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            
+            <Button 
+              onClick={generateMoodboard} 
+              disabled={!selectedMood || loading}
+              className="animate-pulseGlow"
+            >
+              <Sparkles className="w-4 h-4 mr-2" />
+              {loading ? "Generating..." : "Generate"}
+            </Button>
+          </div>
         </div>
-      </section>
 
-      <main className="w-full py-12 md:py-16">
-        <div className="container max-w-7xl mx-auto px-4 md:px-6 space-y-12">
-          {!showResults ? (
-            <>
-              {/* Generator Form */}
-              <div className="grid lg:grid-cols-3 gap-8">
-                {/* Left: Preferences */}
-                <div className="lg:col-span-1 space-y-8">
-                  {/* Occasion Selection */}
-                  <div className="space-y-4">
-                    <h3 className="text-lg font-semibold text-foreground flex items-center gap-2">
-                      <Sparkles className="w-5 h-5 text-primary" />
-                      Occasion
-                    </h3>
-                    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-2 gap-3">
-                      {occasions.map((occ) => (
-                        <button
-                          key={occ.id}
-                          onClick={() => setSelectedOccasion(occ.id)}
-                          className={`p-4 rounded-lg font-medium transition-all flex flex-col items-center gap-2 ${
-                            selectedOccasion === occ.id
-                              ? "bg-primary text-primary-foreground shadow-lg"
-                              : "bg-muted text-foreground hover:bg-muted/80 border border-border"
-                          }`}
-                        >
-                          <span className="text-2xl">{occ.emoji}</span>
-                          <span className="text-sm">{occ.label}</span>
-                        </button>
-                      ))}
-                    </div>
+        <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
+          {/* Clothing Items Panel */}
+          <div className="lg:col-span-1">
+            <Card className="border-border/50 shadow-lg h-full">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Eye className="w-5 h-5 text-primary" />
+                  Your Closet
+                </CardTitle>
+                <CardDescription>
+                  Drag items to the canvas to create your moodboard
+                </CardDescription>
+              </CardHeader>
+              
+              <CardContent className="space-y-4 max-h-[calc(100vh-200px)] overflow-y-auto">
+                {loading ? (
+                  <div className="flex justify-center py-8">
+                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
                   </div>
-
-                  {/* Weather Selection */}
-                  <div className="space-y-4">
-                    <h3 className="text-lg font-semibold text-foreground flex items-center gap-2">
-                      <Cloud className="w-5 h-5 text-accent" />
-                      Weather
-                    </h3>
-                    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-2 gap-3">
-                      {weatherOptions.map((weather) => (
-                        <button
-                          key={weather.id}
-                          onClick={() => setSelectedWeather(weather.id)}
-                          className={`p-4 rounded-lg font-medium transition-all flex flex-col items-center gap-2 ${
-                            selectedWeather === weather.id
-                              ? "bg-accent text-accent-foreground shadow-lg"
-                              : "bg-muted text-foreground hover:bg-muted/80 border border-border"
-                          }`}
-                        >
-                          <span className="text-2xl">{weather.emoji}</span>
-                          <span className="text-sm">{weather.label}</span>
-                        </button>
-                      ))}
-                    </div>
+                ) : clothingItems.length > 0 ? (
+                  <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-2 gap-3">
+                    {clothingItems.map((item) => (
+                      <div 
+                        key={item._id} 
+                        className="border border-border/50 rounded-lg p-2 hover:shadow-md transition-shadow cursor-pointer group"
+                        onClick={() => handleAddToCanvas(item)}
+                      >
+                        <div className="aspect-square bg-muted rounded-md mb-2 flex items-center justify-center overflow-hidden">
+                          {item.imageUrl ? (
+                            <img 
+                              src={item.imageUrl} 
+                              alt={item.title} 
+                              className="w-full h-full object-cover"
+                            />
+                          ) : (
+                            <div className="bg-muted-foreground/10 w-full h-full flex items-center justify-center">
+                              <span className="text-2xl">👕</span>
+                            </div>
+                          )}
+                        </div>
+                        <h3 className="font-medium text-sm truncate">{item.title}</h3>
+                        <p className="text-xs text-foreground/70 truncate">{item.category}</p>
+                        <div className="flex items-center justify-between mt-1">
+                          <Badge variant="secondary" className="text-xs">
+                            {item.ecoScore}/100
+                          </Badge>
+                          <Button 
+                            size="sm" 
+                            variant="ghost" 
+                            className="h-6 w-6 p-0 opacity-0 group-hover:opacity-100 transition-opacity"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleAddToCanvas(item);
+                            }}
+                          >
+                            <Plus className="w-3 h-3" />
+                          </Button>
+                        </div>
+                      </div>
+                    ))}
                   </div>
-
-                  {/* Style Preferences */}
-                  <div className="space-y-4">
-                    <h3 className="text-lg font-semibold text-foreground">
-                      Style Preferences
-                    </h3>
-                    <div className="space-y-2">
-                      {stylePreferences.map((style) => (
-                        <button
-                          key={style}
-                          onClick={() => toggleStyle(style)}
-                          className={`w-full px-4 py-2 rounded-lg font-medium text-sm transition-all ${
-                            selectedStyles.includes(style)
-                              ? "bg-primary/20 text-primary border border-primary"
-                              : "bg-muted text-foreground hover:bg-muted/80 border border-border"
-                          }`}
-                        >
-                          {style}
-                        </button>
-                      ))}
+                ) : (
+                  <div className="text-center py-8">
+                    <div className="bg-muted rounded-full w-16 h-16 flex items-center justify-center mx-auto mb-4">
+                      <Shirt className="w-8 h-8 text-foreground/50" />
                     </div>
+                    <h3 className="font-medium text-foreground mb-1">No Clothing Items</h3>
+                    <p className="text-sm text-foreground/70 mb-4">
+                      Add items to your closet to start creating moodboards
+                    </p>
+                    <Button variant="outline" size="sm">
+                      Add Clothing
+                    </Button>
                   </div>
-                </div>
+                )}
+              </CardContent>
+            </Card>
+          </div>
 
-                {/* Right: Preview & Generate */}
-                <div className="lg:col-span-2 space-y-6">
-                  {/* Selection Summary */}
-                  <div className="card-base p-8 space-y-6">
-                    <h3 className="text-xl font-semibold text-foreground">
-                      Your Preferences
-                    </h3>
-
-                    <div className="space-y-4">
-                      <div>
-                        <h4 className="text-sm font-medium text-foreground/70 mb-2">
-                          Selected Occasion
-                        </h4>
-                        {selectedOccasion ? (
-                          <div className="inline-block px-4 py-2 bg-primary/20 text-primary rounded-lg font-medium">
-                            {occasions.find((o) => o.id === selectedOccasion)?.label}
-                          </div>
-                        ) : (
-                          <p className="text-foreground/60 italic">Not selected</p>
-                        )}
-                      </div>
-
-                      <div>
-                        <h4 className="text-sm font-medium text-foreground/70 mb-2">
-                          Weather Condition
-                        </h4>
-                        {selectedWeather ? (
-                          <div className="inline-block px-4 py-2 bg-accent/20 text-accent rounded-lg font-medium">
-                            {weatherOptions.find((w) => w.id === selectedWeather)?.label}
-                          </div>
-                        ) : (
-                          <p className="text-foreground/60 italic">Not selected</p>
-                        )}
-                      </div>
-
-                      <div>
-                        <h4 className="text-sm font-medium text-foreground/70 mb-2">
-                          Selected Styles ({selectedStyles.length})
-                        </h4>
-                        {selectedStyles.length > 0 ? (
-                          <div className="flex flex-wrap gap-2">
-                            {selectedStyles.map((style) => (
-                              <span
-                                key={style}
-                                className="px-3 py-1 bg-muted text-foreground rounded-full text-sm"
-                              >
-                                {style}
-                              </span>
-                            ))}
-                          </div>
-                        ) : (
-                          <p className="text-foreground/60 italic">None selected</p>
-                        )}
-                      </div>
+          {/* Canvas Area */}
+          <div className="lg:col-span-2">
+            <Card className="border-border/50 shadow-lg h-full flex flex-col">
+              <CardHeader>
+                <CardTitle className="flex items-center justify-between">
+                  <span className="flex items-center gap-2">
+                    <Move className="w-5 h-5 text-primary" />
+                    Moodboard Canvas
+                  </span>
+                  {currentMoodboard && (
+                    <div className="flex gap-2">
+                      <Button 
+                        size="sm" 
+                        variant="outline" 
+                        onClick={() => setIsCreating(true)}
+                      >
+                        <RotateCcw className="w-4 h-4 mr-2" />
+                        Edit
+                      </Button>
+                      <Button 
+                        size="sm" 
+                        variant="outline" 
+                        onClick={() => handleDeleteMoodboard(currentMoodboard._id)}
+                      >
+                        <Trash2 className="w-4 h-4 mr-2" />
+                        Delete
+                      </Button>
                     </div>
-
-                    <button
-                      onClick={handleGenerateOutfit}
-                      disabled={!selectedOccasion || generateMutation.isPending}
-                      className="w-full py-4 bg-primary text-primary-foreground rounded-lg font-semibold hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center justify-center gap-2 group"
+                  )}
+                </CardTitle>
+                <CardDescription>
+                  {currentMoodboard 
+                    ? currentMoodboard.title 
+                    : "Generate a moodboard or create your own"}
+                </CardDescription>
+              </CardHeader>
+              
+              <CardContent className="flex-1 flex flex-col">
+                {isCreating ? (
+                  <>
+                    <div className="flex gap-2 mb-4">
+                      <Input
+                        id="moodboard-title"
+                        placeholder="Moodboard title"
+                        value={moodboardForm.title}
+                        onChange={(e) => setMoodboardForm({...moodboardForm, title: e.target.value})}
+                        className="flex-1"
+                        aria-label="Moodboard title"
+                      />
+                      <Button 
+                        size="sm" 
+                        variant="outline"
+                        onClick={() => setMoodboardForm({...moodboardForm, isPublic: !moodboardForm.isPublic})}
+                      >
+                        {moodboardForm.isPublic ? (
+                          <Unlock className="w-4 h-4 mr-2" />
+                        ) : (
+                          <Lock className="w-4 h-4 mr-2" />
+                        )}
+                        {moodboardForm.isPublic ? "Public" : "Private"}
+                      </Button>
+                    </div>
+                    
+                    <div 
+                      ref={canvasRef}
+                      className="flex-1 bg-muted rounded-lg border-2 border-dashed border-border/50 relative overflow-hidden"
+                      onMouseMove={handleCanvasMouseMove}
+                      onMouseUp={handleCanvasMouseUp}
+                      onMouseLeave={handleCanvasMouseUp}
                     >
-                      {generateMutation.isPending ? (
-                        <>
-                          <Loader className="w-5 h-5 animate-spin" />
-                          Generating Outfit...
-                        </>
-                      ) : (
-                        <>
-                          <Wand2 className="w-5 h-5" />
-                          Generate Outfit
-                          <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
-                        </>
-                      )}
-                    </button>
-                  </div>
-
-                  {/* How It Works */}
-                  <div className="bg-gradient-to-br from-primary/5 to-nature/5 rounded-xl p-6 space-y-4">
-                    <h3 className="font-semibold text-foreground">How It Works</h3>
-                    <ul className="space-y-2 text-sm text-foreground/70">
-                      <li className="flex gap-3">
-                        <span className="text-primary font-bold">1.</span>
-                        <span>Select your occasion and weather conditions</span>
-                      </li>
-                      <li className="flex gap-3">
-                        <span className="text-primary font-bold">2.</span>
-                        <span>Choose style preferences (optional)</span>
-                      </li>
-                      <li className="flex gap-3">
-                        <span className="text-primary font-bold">3.</span>
-                        <span>Our AI analyzes your closet for perfect combinations</span>
-                      </li>
-                      <li className="flex gap-3">
-                        <span className="text-primary font-bold">4.</span>
-                        <span>View, rate, and save your outfit suggestions</span>
-                      </li>
-                    </ul>
-                  </div>
-                </div>
-              </div>
-            </>
-          ) : (
-            <>
-              {/* Results View */}
-              <div className="space-y-8">
-                <div className="flex items-center justify-between">
-                  <h2 className="text-3xl font-bold text-foreground">
-                    Your Generated Outfit
-                  </h2>
-                  <button
-                    onClick={() => setShowResults(false)}
-                    className="px-6 py-2 border border-border rounded-lg font-medium hover:bg-muted/50 transition-colors"
-                  >
-                    Generate Another
-                  </button>
-                </div>
-
-                {generatedOutfit ? (
-                  <div className="grid lg:grid-cols-3 gap-8">
-                    {/* Outfit Card */}
-                    <div className="lg:col-span-2 space-y-6">
-                      <div className="card-base overflow-hidden">
-                        <div className="bg-gradient-to-br from-primary/10 to-nature/10 h-96 flex items-center justify-center relative overflow-hidden">
-                          <div className="absolute inset-0 flex items-center justify-center">
-                            <div className="text-center space-y-4">
-                              <div className="text-8xl">👗</div>
-                              <h3 className="text-2xl font-bold text-foreground">
-                                Perfect Outfit Combination
-                              </h3>
-                            </div>
-                          </div>
-                        </div>
-
-                        <div className="p-8 space-y-6">
-                          <div>
-                            <h3 className="text-2xl font-bold text-foreground mb-3">
-                              {generatedOutfit.title}
-                            </h3>
-                            <p className="text-foreground/70 leading-relaxed">
-                              {outfitDescription}
-                            </p>
-                          </div>
-
-                          {/* Weather Info */}
-                          {weatherInfo && (
-                            <div className="bg-muted/50 p-4 rounded-lg">
-                              <h4 className="font-semibold text-foreground mb-2">
-                                ☁️ Weather Information
-                              </h4>
-                              <div className="grid grid-cols-2 gap-4 text-sm">
-                                <div>
-                                  <span className="text-foreground/70">Condition:</span>
-                                  <p className="font-medium text-foreground">
-                                    {weatherInfo.description}
-                                  </p>
-                                </div>
-                                <div>
-                                  <span className="text-foreground/70">Temperature:</span>
-                                  <p className="font-medium text-foreground">
-                                    {weatherInfo.temp}°C
-                                  </p>
-                                </div>
-                                <div>
-                                  <span className="text-foreground/70">Humidity:</span>
-                                  <p className="font-medium text-foreground">
-                                    {weatherInfo.humidity}%
-                                  </p>
-                                </div>
-                                <div>
-                                  <span className="text-foreground/70">Wind Speed:</span>
-                                  <p className="font-medium text-foreground">
-                                    {weatherInfo.windSpeed} m/s
-                                  </p>
-                                </div>
+                      {canvasItems.length > 0 ? (
+                        canvasItems.map((item) => (
+                          <div
+                            key={item.id}
+                            className={`absolute cursor-move transition-transform ${
+                              selectedItem === item.id ? "ring-2 ring-primary" : ""
+                            }`}
+                            style={{
+                              left: `${item.position.x}px`,
+                              top: `${item.position.y}px`,
+                              transform: `rotate(${item.rotation}deg) scale(${item.scale})`,
+                              transformOrigin: "center"
+                            }}
+                            onMouseDown={(e) => handleCanvasMouseDown(e, item.id)}
+                          >
+                            <div className="relative">
+                              <div className="bg-card border border-border rounded-lg shadow-md w-32 h-40 overflow-hidden">
+                                {item.clothingItem.imageUrl ? (
+                                  <img 
+                                    src={item.clothingItem.imageUrl} 
+                                    alt={item.clothingItem.title} 
+                                    className="w-full h-full object-cover"
+                                  />
+                                ) : (
+                                  <div className="w-full h-full flex items-center justify-center bg-muted">
+                                    <span className="text-3xl">👕</span>
+                                  </div>
+                                )}
                               </div>
+                              
+                              {selectedItem === item.id && (
+                                <div className="absolute -top-10 left-1/2 transform -translate-x-1/2 bg-card border border-border rounded-md shadow-lg p-1 flex gap-1">
+                                  <Button 
+                                    size="sm" 
+                                    variant="ghost" 
+                                    className="h-6 w-6 p-0"
+                                    onClick={() => handleRotateItem(item.id, "left")}
+                                  >
+                                    <RotateCcw className="w-3 h-3" />
+                                  </Button>
+                                  <Button 
+                                    size="sm" 
+                                    variant="ghost" 
+                                    className="h-6 w-6 p-0"
+                                    onClick={() => handleScaleItem(item.id, "out")}
+                                  >
+                                    <ZoomOut className="w-3 h-3" />
+                                  </Button>
+                                  <Button 
+                                    size="sm" 
+                                    variant="ghost" 
+                                    className="h-6 w-6 p-0"
+                                    onClick={() => handleScaleItem(item.id, "in")}
+                                  >
+                                    <ZoomIn className="w-3 h-3" />
+                                  </Button>
+                                  <Button 
+                                    size="sm" 
+                                    variant="ghost" 
+                                    className="h-6 w-6 p-0 text-destructive"
+                                    onClick={() => handleDeleteItem(item.id)}
+                                  >
+                                    <Trash2 className="w-3 h-3" />
+                                  </Button>
+                                </div>
+                              )}
                             </div>
-                          )}
-
-                          {/* Suggestions */}
-                          <div>
-                            <h4 className="font-semibold text-foreground mb-3">
-                              💡 Styling Tips
-                            </h4>
-                            <ul className="space-y-2">
-                              {suggestions.map((suggestion, idx) => (
-                                <li
-                                  key={idx}
-                                  className="flex gap-3 text-sm text-foreground/70"
-                                >
-                                  <span className="text-primary font-bold min-w-[20px]">
-                                    ✓
-                                  </span>
-                                  <span>{suggestion}</span>
-                                </li>
-                              ))}
-                            </ul>
                           </div>
-
-                          {/* Actions */}
-                          <div className="flex gap-3 pt-4 border-t border-border">
-                            <button
-                              onClick={() =>
-                                handleToggleSaveOutfit(generatedOutfit._id)
-                              }
-                              className="flex-1 py-3 bg-primary/10 text-primary rounded-lg font-semibold hover:bg-primary/20 transition-colors flex items-center justify-center gap-2"
-                            >
-                              <Heart className="w-5 h-5" />
-                              Save Outfit
-                            </button>
-                            <button className="flex-1 py-3 border border-border rounded-lg font-semibold hover:bg-muted/50 transition-colors flex items-center justify-center gap-2">
-                              <Share2 className="w-5 h-5" />
-                              Share
-                            </button>
-                            <button className="flex-1 py-3 border border-border rounded-lg font-semibold hover:bg-muted/50 transition-colors flex items-center justify-center gap-2">
-                              <Download className="w-5 h-5" />
-                              Download
-                            </button>
-                          </div>
+                        ))
+                      ) : (
+                        <div className="absolute inset-0 flex flex-col items-center justify-center text-foreground/50">
+                          <Move className="w-12 h-12 mb-2" />
+                          <p className="text-lg font-medium">Drag items here</p>
+                          <p className="text-sm">Select clothing from your closet and drag to the canvas</p>
                         </div>
+                      )}
+                    </div>
+                    
+                    <div className="flex justify-between mt-4">
+                      <Button 
+                        variant="outline" 
+                        onClick={() => {
+                          setIsCreating(false);
+                          setCurrentMoodboard(null);
+                          setCanvasItems([]);
+                        }}
+                      >
+                        Cancel
+                      </Button>
+                      <Button 
+                        onClick={handleSaveMoodboard}
+                        disabled={saving || canvasItems.length === 0}
+                      >
+                        {saving ? "Saving..." : "Save Moodboard"}
+                      </Button>
+                    </div>
+                  </>
+                ) : currentMoodboard ? (
+                  <div className="flex-1 flex flex-col">
+                    <div className="flex-1 bg-muted rounded-lg border border-border overflow-hidden relative">
+                      <div className="grid grid-cols-2 md:grid-cols-3 gap-4 p-4">
+                        {currentMoodboard.items.map((item) => (
+                          <div key={item.id} className="bg-card border border-border rounded-lg overflow-hidden">
+                            <div className="aspect-square bg-muted flex items-center justify-center">
+                              {item.clothingItem.imageUrl ? (
+                                <img 
+                                  src={item.clothingItem.imageUrl} 
+                                  alt={item.clothingItem.title} 
+                                  className="w-full h-full object-cover"
+                                />
+                              ) : (
+                                <span className="text-3xl">👕</span>
+                              )}
+                            </div>
+                            <div className="p-2">
+                              <h3 className="font-medium text-sm truncate">{item.clothingItem.title}</h3>
+                              <p className="text-xs text-foreground/70">{item.clothingItem.category}</p>
+                            </div>
+                          </div>
+                        ))}
                       </div>
                     </div>
-
-                    {/* Rating & Details */}
-                    <div className="space-y-6">
-                      <div className="card-base p-6 space-y-4">
-                        <h4 className="font-semibold text-foreground">
-                          How do you like it?
-                        </h4>
-                        <div className="flex gap-2">
-                          {[1, 2, 3, 4, 5].map((rating) => (
-                            <button
-                              key={rating}
-                              onClick={() =>
-                                handleRateOutfit(generatedOutfit._id, rating)
-                              }
-                              className="flex-1 py-3 rounded-lg bg-muted hover:bg-primary/20 transition-colors"
-                            >
-                              <Star
-                                className={`w-5 h-5 mx-auto ${
-                                  rating <= (generatedOutfit.rating || 0)
-                                    ? "fill-accent text-accent"
-                                    : "text-foreground/40"
-                                }`}
-                              />
-                            </button>
-                          ))}
-                        </div>
+                    
+                    <div className="flex justify-between mt-4">
+                      <div className="flex gap-2">
+                        <Button variant="outline" size="sm">
+                          <Heart className="w-4 h-4 mr-2" />
+                          {currentMoodboard.likes}
+                        </Button>
+                        <Button variant="outline" size="sm">
+                          <Share2 className="w-4 h-4 mr-2" />
+                          Share
+                        </Button>
+                        <Button variant="outline" size="sm">
+                          <Download className="w-4 h-4 mr-2" />
+                          Download
+                        </Button>
                       </div>
-
-                      {/* Outfit Details */}
-                      <div className="card-base p-6 space-y-4">
-                        <h4 className="font-semibold text-foreground">
-                          Outfit Details
-                        </h4>
-                        <div className="space-y-2 text-sm">
-                          <div className="flex justify-between">
-                            <span className="text-foreground/70">Occasion:</span>
-                            <span className="font-medium text-foreground">
-                              {occasions.find((o) => o.id === generatedOutfit.occasion)
-                                ?.label || "N/A"}
-                            </span>
-                          </div>
-                          <div className="flex justify-between">
-                            <span className="text-foreground/70">Weather:</span>
-                            <span className="font-medium text-foreground">
-                              {generatedOutfit.weather}
-                            </span>
-                          </div>
-                          <div className="flex justify-between">
-                            <span className="text-foreground/70">Items:</span>
-                            <span className="font-medium text-foreground">
-                              {generatedOutfit.items?.length || 0}
-                            </span>
-                          </div>
-                          {generatedOutfit.aiSuggestion?.confidence && (
-                            <div className="flex justify-between">
-                              <span className="text-foreground/70">Confidence:</span>
-                              <span className="font-medium text-foreground">
-                                {Math.round(
-                                  generatedOutfit.aiSuggestion.confidence * 100
-                                )}
-                                %
-                              </span>
-                            </div>
-                          )}
-                        </div>
+                      <div className="flex gap-2">
+                        {currentMoodboard.tags.map((tag) => (
+                          <Badge key={tag} variant="secondary">
+                            {tag}
+                          </Badge>
+                        ))}
                       </div>
-
-                      {/* Previous Outfits */}
-                      {outfitsData?.count > 0 && (
-                        <div className="card-base p-6 space-y-4">
-                          <h4 className="font-semibold text-foreground">
-                            Recent Outfits
-                          </h4>
-                          <div className="space-y-2 max-h-64 overflow-y-auto">
-                            {outfitsData.data?.slice(0, 5).map((outfit: any) => (
-                              <div
-                                key={outfit._id}
-                                className="p-2 rounded bg-muted/50 text-xs cursor-pointer hover:bg-muted transition-colors"
-                              >
-                                <p className="font-medium text-foreground truncate">
-                                  {outfit.title}
-                                </p>
-                                <p className="text-foreground/60">
-                                  {outfit.occasion}
-                                </p>
-                              </div>
-                            ))}
-                          </div>
-                        </div>
-                      )}
                     </div>
                   </div>
                 ) : (
-                  <div className="card-base p-12 text-center">
-                    <p className="text-foreground/70">Loading outfit...</p>
+                  <div className="flex-1 flex flex-col items-center justify-center text-foreground/50 bg-muted rounded-lg border-2 border-dashed border-border/50">
+                    <Sparkles className="w-12 h-12 mb-4" />
+                    <h3 className="text-lg font-medium mb-2">No Moodboard Selected</h3>
+                    <p className="text-center mb-4 max-w-md">
+                      Select a mood and click "Generate" to create an AI-powered outfit moodboard, 
+                      or start creating your own from scratch.
+                    </p>
+                    <div className="flex gap-2">
+                      <Select value={selectedMood} onValueChange={setSelectedMood}>
+                        <SelectTrigger className="w-40">
+                          <SelectValue placeholder="Select a mood" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {moodOptions.map((mood) => (
+                            <SelectItem key={mood.id} value={mood.id}>
+                              <span className="flex items-center gap-2">
+                                <span>{mood.emoji}</span>
+                                <span>{mood.label}</span>
+                              </span>
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <Button 
+                        onClick={() => setIsCreating(true)}
+                        disabled={!selectedMood}
+                      >
+                        <Plus className="w-4 h-4 mr-2" />
+                        Create Blank
+                      </Button>
+                    </div>
                   </div>
                 )}
-              </div>
-            </>
-          )}
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* Moodboards List */}
+          <div className="lg:col-span-1">
+            <Card className="border-border/50 shadow-lg h-full">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Save className="w-5 h-5 text-primary" />
+                  Saved Moodboards
+                </CardTitle>
+                <CardDescription>
+                  Your previously created moodboards
+                </CardDescription>
+              </CardHeader>
+              
+              <CardContent className="space-y-4 max-h-[calc(100vh-200px)] overflow-y-auto">
+                {moodboards.length > 0 ? (
+                  <div className="space-y-3">
+                    {moodboards.map((moodboard) => (
+                      <div 
+                        key={moodboard._id} 
+                        className={`border rounded-lg p-3 cursor-pointer transition-colors ${
+                          currentMoodboard?._id === moodboard._id 
+                            ? "border-primary bg-primary/5" 
+                            : "border-border/50 hover:bg-muted/50"
+                        }`}
+                        onClick={() => {
+                          setCurrentMoodboard(moodboard);
+                          setCanvasItems(moodboard.items);
+                          setIsCreating(false);
+                        }}
+                      >
+                        <div className="flex justify-between items-start">
+                          <div>
+                            <h3 className="font-medium text-foreground">{moodboard.title}</h3>
+                            <div className="flex items-center gap-2 mt-1">
+                              <Badge variant="secondary" className="text-xs">
+                                {moodboard.mood}
+                              </Badge>
+                              {moodboard.isPublic && (
+                                <Badge variant="outline" className="text-xs">
+                                  Public
+                                </Badge>
+                              )}
+                            </div>
+                          </div>
+                          <Button 
+                            size="sm" 
+                            variant="ghost" 
+                            className="h-6 w-6 p-0"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleLikeMoodboard(moodboard._id);
+                            }}
+                          >
+                            <Heart className="w-3 h-3" />
+                          </Button>
+                        </div>
+                        
+                        <div className="flex items-center justify-between mt-2">
+                          <span className="text-xs text-foreground/70">
+                            {new Date(moodboard.createdAt).toLocaleDateString()}
+                          </span>
+                          <div className="flex items-center gap-1 text-xs text-foreground/70">
+                            <Heart className="w-3 h-3" />
+                            <span>{moodboard.likes}</span>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="text-center py-8">
+                    <div className="bg-muted rounded-full w-16 h-16 flex items-center justify-center mx-auto mb-4">
+                      <Save className="w-8 h-8 text-foreground/50" />
+                    </div>
+                    <h3 className="font-medium text-foreground mb-1">No Moodboards Yet</h3>
+                    <p className="text-sm text-foreground/70">
+                      Create your first moodboard to get started
+                    </p>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </div>
         </div>
-      </main>
-    </Layout>
+      </div>
+    </div>
   );
 }

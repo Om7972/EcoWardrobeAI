@@ -1,486 +1,928 @@
-import { useState } from "react";
-import Layout from "@/components/Layout";
-import {
-  Shuffle,
-  Plus,
-  Star,
-  Heart,
-  MessageSquare,
-  Filter,
+import { useState, useEffect } from "react";
+import { Link } from "react-router-dom";
+import { 
+  Leaf, 
+  ShoppingCart, 
+  Heart, 
+  Filter, 
   Search,
-  Check,
-  X,
-  AlertCircle,
+  Plus,
+  Eye,
+  User,
+  Tag,
+  Shirt,
+  RefreshCw,
+  Gift,
+  Coins,
+  MapPin,
+  Star
 } from "lucide-react";
-import {
-  useGetAllListings,
-  useGetUserListings,
-  useCreateSwapRequest,
-  useGetUserSwapRequests,
-  useAcceptSwapRequest,
-  useRejectSwapRequest,
-} from "@/hooks/useApi";
 import { toast } from "sonner";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Badge } from "@/components/ui/badge";
+import { Separator } from "@/components/ui/separator";
+import { 
+  Dialog, 
+  DialogContent, 
+  DialogDescription, 
+  DialogFooter, 
+  DialogHeader, 
+  DialogTitle, 
+  DialogTrigger 
+} from "@/components/ui/dialog";
+import { useAuth } from "@/hooks/useAuth";
 
-const DEMO_USER_ID = "demo-user-123";
+interface MarketplaceListing {
+  _id: string;
+  userId: string;
+  clothingItemId: string;
+  title: string;
+  description: string;
+  price: number;
+  condition: "new" | "like-new" | "good" | "fair" | "poor";
+  category: string;
+  size: string;
+  brand?: string;
+  color?: string;
+  material?: string;
+  images: string[];
+  listingType: "sale" | "swap" | "gift";
+  status: "active" | "sold" | "swapped" | "gifted" | "inactive";
+  ecoScore: number;
+  views: number;
+  likes: number;
+  createdAt: string;
+  updatedAt: string;
+}
 
-const conditions = ["like-new", "excellent", "good", "fair"];
-const categories = ["tops", "bottoms", "dresses", "shoes", "accessories"];
+interface SwapRequest {
+  _id: string;
+  fromUserId: string;
+  toUserId: string;
+  fromListingId: string;
+  toListingId?: string;
+  message: string;
+  status: "pending" | "accepted" | "rejected" | "completed";
+  createdAt: string;
+  updatedAt: string;
+}
 
 export default function ThriftSwap() {
+  const { user } = useAuth();
+  
   const [activeTab, setActiveTab] = useState<"browse" | "myListings" | "requests">("browse");
-  const [selectedCondition, setSelectedCondition] = useState<string | null>(null);
-  const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
-  const [searchQuery, setSearchQuery] = useState("");
+  const [listings, setListings] = useState<MarketplaceListing[]>([]);
+  const [myListings, setMyListings] = useState<MarketplaceListing[]>([]);
+  const [swapRequests, setSwapRequests] = useState<SwapRequest[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  
+  // Form states
+  const [listingForm, setListingForm] = useState({
+    clothingItemId: "",
+    title: "",
+    description: "",
+    price: 0,
+    condition: "good" as "new" | "like-new" | "good" | "fair" | "poor",
+    category: "",
+    size: "",
+    brand: "",
+    color: "",
+    material: "",
+    images: [] as string[],
+    listingType: "sale" as "sale" | "swap" | "gift",
+    ecoScore: 0
+  });
+  
+  const [filter, setFilter] = useState({
+    category: "",
+    size: "",
+    condition: "",
+    minPrice: "",
+    maxPrice: "",
+    listingType: "",
+    search: ""
+  });
+  
+  const [isListingDialogOpen, setIsListingDialogOpen] = useState(false);
+  const [selectedListing, setSelectedListing] = useState<MarketplaceListing | null>(null);
 
-  const { data: allListings } = useGetAllListings();
-  const { data: myListings } = useGetUserListings(DEMO_USER_ID);
-  const { data: swapRequests, refetch: refetchRequests } = useGetUserSwapRequests(DEMO_USER_ID);
-  const createRequestMutation = useCreateSwapRequest();
-  const acceptRequestMutation = useAcceptSwapRequest();
-  const rejectRequestMutation = useRejectSwapRequest();
+  useEffect(() => {
+    fetchListings();
+  }, [filter]);
 
-  const filteredListings = allListings?.data?.filter((item: any) => {
-    const matchesSearch = item.title.toLowerCase().includes(searchQuery.toLowerCase());
-    const matchesCondition = !selectedCondition || item.condition === selectedCondition;
-    const matchesCategory = !selectedCategory || item.category === selectedCategory;
-    return matchesSearch && matchesCondition && matchesCategory;
-  }) || [];
+  useEffect(() => {
+    if (user?.userId) {
+      fetchMyListings();
+      fetchSwapRequests();
+    }
+  }, [user?.userId, activeTab]);
 
-  const handleCreateSwapRequest = (listingId: string) => {
-    createRequestMutation.mutate(
-      {
-        listingId,
-        fromUserId: DEMO_USER_ID,
-        offeredItemId: "sample-item-1",
-        desiredItemId: listingId,
-      },
-      {
-        onSuccess: () => {
-          toast.success("Swap request sent!");
-          refetchRequests();
-        },
-        onError: () => {
-          toast.error("Failed to send request");
-        },
-      }
-    );
+  const fetchListings = async () => {
+    try {
+      setLoading(true);
+      const queryParams = new URLSearchParams();
+      
+      if (filter.category) queryParams.append("category", filter.category);
+      if (filter.size) queryParams.append("size", filter.size);
+      if (filter.condition) queryParams.append("condition", filter.condition);
+      if (filter.minPrice) queryParams.append("minPrice", filter.minPrice);
+      if (filter.maxPrice) queryParams.append("maxPrice", filter.maxPrice);
+      if (filter.listingType) queryParams.append("listingType", filter.listingType);
+      if (filter.search) queryParams.append("search", filter.search);
+      
+      const response = await fetch(`/api/marketplace/listings?${queryParams.toString()}`);
+      if (!response.ok) throw new Error("Failed to fetch listings");
+      
+      const data = await response.json();
+      setListings(data.data);
+    } catch (error) {
+      console.error("Error fetching listings:", error);
+      toast.error("Failed to load listings");
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const handleAcceptRequest = (requestId: string) => {
-    acceptRequestMutation.mutate(requestId, {
-      onSuccess: () => {
-        toast.success("Request accepted!");
-        refetchRequests();
-      },
-    });
+  const fetchMyListings = async () => {
+    if (!user?.userId) return;
+    
+    try {
+      const response = await fetch(`/api/marketplace/user/${user.userId}/listings`);
+      if (!response.ok) throw new Error("Failed to fetch your listings");
+      
+      const data = await response.json();
+      setMyListings(data.data);
+    } catch (error) {
+      console.error("Error fetching your listings:", error);
+      toast.error("Failed to load your listings");
+    }
   };
 
-  const handleRejectRequest = (requestId: string) => {
-    rejectRequestMutation.mutate(requestId, {
-      onSuccess: () => {
-        toast.success("Request rejected");
-        refetchRequests();
-      },
-    });
+  const fetchSwapRequests = async () => {
+    if (!user?.userId) return;
+    
+    try {
+      const response = await fetch(`/api/marketplace/user/${user.userId}/requests`);
+      if (!response.ok) throw new Error("Failed to fetch swap requests");
+      
+      const data = await response.json();
+      setSwapRequests(data.data);
+    } catch (error) {
+      console.error("Error fetching swap requests:", error);
+      toast.error("Failed to load swap requests");
+    }
   };
 
-  const incomingRequests = swapRequests?.data?.filter(
-    (req: any) => req.toUserId === DEMO_USER_ID
-  ) || [];
-  const outgoingRequests = swapRequests?.data?.filter(
-    (req: any) => req.fromUserId === DEMO_USER_ID
-  ) || [];
+  const handleCreateListing = async () => {
+    if (!user?.userId) return;
+    
+    try {
+      setSaving(true);
+      const response = await fetch("/api/marketplace/listings", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          ...listingForm,
+          userId: user.userId
+        })
+      });
+      
+      if (!response.ok) throw new Error("Failed to create listing");
+      
+      const data = await response.json();
+      setMyListings([data.data, ...myListings]);
+      setIsListingDialogOpen(false);
+      setListingForm({
+        clothingItemId: "",
+        title: "",
+        description: "",
+        price: 0,
+        condition: "good",
+        category: "",
+        size: "",
+        brand: "",
+        color: "",
+        material: "",
+        images: [],
+        listingType: "sale",
+        ecoScore: 0
+      });
+      toast.success("Listing created successfully!");
+    } catch (error) {
+      console.error("Error creating listing:", error);
+      toast.error("Failed to create listing");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleDeleteListing = async (listingId: string) => {
+    try {
+      const response = await fetch(`/api/marketplace/listings/${listingId}`, {
+        method: "DELETE"
+      });
+      
+      if (!response.ok) throw new Error("Failed to delete listing");
+      
+      setMyListings(myListings.filter(listing => listing._id !== listingId));
+      toast.success("Listing deleted successfully!");
+    } catch (error) {
+      console.error("Error deleting listing:", error);
+      toast.error("Failed to delete listing");
+    }
+  };
+
+  const handleLikeListing = async (listingId: string) => {
+    try {
+      const response = await fetch(`/api/marketplace/listings/${listingId}/like`, {
+        method: "PUT"
+      });
+      
+      if (!response.ok) throw new Error("Failed to like listing");
+      
+      // Update the listing in state
+      setListings(listings.map(listing => 
+        listing._id === listingId 
+          ? { ...listing, likes: listing.likes + 1 } 
+          : listing
+      ));
+      
+      toast.success("Liked!");
+    } catch (error) {
+      console.error("Error liking listing:", error);
+      toast.error("Failed to like listing");
+    }
+  };
+
+  const handleAcceptRequest = async (requestId: string) => {
+    try {
+      const response = await fetch(`/api/marketplace/requests/${requestId}/accept`, {
+        method: "PUT"
+      });
+      
+      if (!response.ok) throw new Error("Failed to accept request");
+      
+      fetchSwapRequests();
+      toast.success("Request accepted!");
+    } catch (error) {
+      console.error("Error accepting request:", error);
+      toast.error("Failed to accept request");
+    }
+  };
+
+  const handleRejectRequest = async (requestId: string) => {
+    try {
+      const response = await fetch(`/api/marketplace/requests/${requestId}/reject`, {
+        method: "PUT"
+      });
+      
+      if (!response.ok) throw new Error("Failed to reject request");
+      
+      fetchSwapRequests();
+      toast.success("Request rejected!");
+    } catch (error) {
+      console.error("Error rejecting request:", error);
+      toast.error("Failed to reject request");
+    }
+  };
+
+  const filteredListings = listings.filter(listing => {
+    // Additional client-side filtering if needed
+    return true;
+  });
+
+  const conditionLabels = {
+    "new": "New",
+    "like-new": "Like New",
+    "good": "Good",
+    "fair": "Fair",
+    "poor": "Poor"
+  };
+
+  const listingTypeLabels = {
+    "sale": "For Sale",
+    "swap": "For Swap",
+    "gift": "For Gift"
+  };
 
   return (
-    <Layout>
-      <section className="w-full bg-gradient-to-b from-primary/5 to-background border-b border-border/40 py-8 md:py-12">
-        <div className="container max-w-7xl mx-auto px-4 md:px-6">
-          <h1 className="text-3xl md:text-4xl font-bold text-foreground flex items-center gap-2">
-            <Shuffle className="w-8 h-8 text-primary" />
-            Thrift Swap Marketplace
-          </h1>
-          <p className="text-lg text-foreground/70 mt-2">
-            Swap clothing with the community and reduce fashion waste
-          </p>
-        </div>
-      </section>
-
-      <main className="w-full py-12 md:py-16">
-        <div className="container max-w-7xl mx-auto px-4 md:px-6 space-y-8">
-          {/* Tabs */}
-          <div className="flex gap-2 border-b border-border/40">
-            {[
-              { id: "browse", label: "Browse Listings" },
-              { id: "myListings", label: "My Listings" },
-              { id: "requests", label: "Swap Requests" },
-            ].map((tab) => (
-              <button
-                key={tab.id}
-                onClick={() => setActiveTab(tab.id as any)}
-                className={`px-6 py-4 font-medium transition-colors border-b-2 ${
-                  activeTab === tab.id
-                    ? "border-primary text-primary"
-                    : "border-transparent text-foreground/70 hover:text-foreground"
-                }`}
-              >
-                {tab.label}
-              </button>
-            ))}
+    <div className="min-h-screen bg-gradient-to-br from-primary/5 via-background to-nature/5">
+      <div className="container py-8">
+        {/* Header */}
+        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-8">
+          <div>
+            <h1 className="text-3xl font-bold text-foreground flex items-center gap-2">
+              <ShoppingCart className="w-8 h-8 text-primary" />
+              Circular Marketplace
+            </h1>
+            <p className="text-foreground/70 mt-2">
+              Buy, sell, swap, and gift pre-loved items within our community
+            </p>
           </div>
+          
+          <div className="flex gap-2">
+            <Button 
+              variant={activeTab === "browse" ? "default" : "outline"} 
+              onClick={() => setActiveTab("browse")}
+              className="transition-all duration-300"
+            >
+              <ShoppingCart className="w-4 h-4 mr-2" />
+              Browse
+            </Button>
+            <Button 
+              variant={activeTab === "myListings" ? "default" : "outline"} 
+              onClick={() => setActiveTab("myListings")}
+              className="transition-all duration-300"
+            >
+              <Tag className="w-4 h-4 mr-2" />
+              My Listings
+            </Button>
+            <Button 
+              variant={activeTab === "requests" ? "default" : "outline"} 
+              onClick={() => setActiveTab("requests")}
+              className="transition-all duration-300"
+            >
+              <RefreshCw className="w-4 h-4 mr-2" />
+              Requests
+            </Button>
+            <Dialog open={isListingDialogOpen} onOpenChange={setIsListingDialogOpen}>
+              <DialogTrigger asChild>
+                <Button onClick={() => setIsListingDialogOpen(true)}>
+                  <Plus className="w-4 h-4 mr-2" />
+                  New Listing
+                </Button>
+              </DialogTrigger>
+              <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+                <DialogHeader>
+                  <DialogTitle>Create New Listing</DialogTitle>
+                  <DialogDescription>
+                    List an item from your virtual closet to the marketplace
+                  </DialogDescription>
+                </DialogHeader>
+                
+                <div className="grid gap-4 py-4">
+                  <div className="grid grid-cols-4 items-center gap-4">
+                    <Label htmlFor="title" className="text-right">
+                      Title
+                    </Label>
+                    <div className="col-span-3">
+                      <Input
+                        id="title"
+                        value={listingForm.title}
+                        onChange={(e) => setListingForm({...listingForm, title: e.target.value})}
+                        placeholder="e.g., Vintage Denim Jacket"
+                      />
+                    </div>
+                  </div>
+                  
+                  <div className="grid grid-cols-4 items-start gap-4">
+                    <Label htmlFor="description" className="text-right pt-2">
+                      Description
+                    </Label>
+                    <div className="col-span-3">
+                      <Textarea
+                        id="description"
+                        value={listingForm.description}
+                        onChange={(e) => setListingForm({...listingForm, description: e.target.value})}
+                        placeholder="Describe the item, its condition, and why you're listing it..."
+                        className="min-h-[80px]"
+                      />
+                    </div>
+                  </div>
+                  
+                  <div className="grid grid-cols-4 items-center gap-4">
+                    <Label htmlFor="category" className="text-right">
+                      Category
+                    </Label>
+                    <div className="col-span-3">
+                      <Select 
+                        value={listingForm.category} 
+                        onValueChange={(value) => setListingForm({...listingForm, category: value})}
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select category" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="tops">Tops</SelectItem>
+                          <SelectItem value="bottoms">Bottoms</SelectItem>
+                          <SelectItem value="dresses">Dresses</SelectItem>
+                          <SelectItem value="outerwear">Outerwear</SelectItem>
+                          <SelectItem value="shoes">Shoes</SelectItem>
+                          <SelectItem value="accessories">Accessories</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
+                  
+                  <div className="grid grid-cols-4 items-center gap-4">
+                    <Label htmlFor="size" className="text-right">
+                      Size
+                    </Label>
+                    <div className="col-span-3">
+                      <Input
+                        id="size"
+                        value={listingForm.size}
+                        onChange={(e) => setListingForm({...listingForm, size: e.target.value})}
+                        placeholder="e.g., M, 10, 38"
+                      />
+                    </div>
+                  </div>
+                  
+                  <div className="grid grid-cols-4 items-center gap-4">
+                    <Label htmlFor="condition" className="text-right">
+                      Condition
+                    </Label>
+                    <div className="col-span-3">
+                      <Select 
+                        value={listingForm.condition} 
+                        onValueChange={(value) => setListingForm({...listingForm, condition: value as any})}
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select condition" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="new">New</SelectItem>
+                          <SelectItem value="like-new">Like New</SelectItem>
+                          <SelectItem value="good">Good</SelectItem>
+                          <SelectItem value="fair">Fair</SelectItem>
+                          <SelectItem value="poor">Poor</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
+                  
+                  <div className="grid grid-cols-4 items-center gap-4">
+                    <Label htmlFor="listingType" className="text-right">
+                      Listing Type
+                    </Label>
+                    <div className="col-span-3">
+                      <Select 
+                        value={listingForm.listingType} 
+                        onValueChange={(value) => setListingForm({...listingForm, listingType: value as any})}
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select listing type" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="sale">For Sale</SelectItem>
+                          <SelectItem value="swap">For Swap</SelectItem>
+                          <SelectItem value="gift">For Gift</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
+                  
+                  {listingForm.listingType === "sale" && (
+                    <div className="grid grid-cols-4 items-center gap-4">
+                      <Label htmlFor="price" className="text-right">
+                        Price ($)
+                      </Label>
+                      <div className="col-span-3">
+                        <Input
+                          id="price"
+                          type="number"
+                          value={listingForm.price}
+                          onChange={(e) => setListingForm({...listingForm, price: parseFloat(e.target.value) || 0})}
+                          placeholder="0.00"
+                        />
+                      </div>
+                    </div>
+                  )}
+                  
+                  <div className="grid grid-cols-4 items-center gap-4">
+                    <Label htmlFor="brand" className="text-right">
+                      Brand
+                    </Label>
+                    <div className="col-span-3">
+                      <Input
+                        id="brand"
+                        value={listingForm.brand}
+                        onChange={(e) => setListingForm({...listingForm, brand: e.target.value})}
+                        placeholder="e.g., Levi's, Zara"
+                      />
+                    </div>
+                  </div>
+                  
+                  <div className="grid grid-cols-4 items-center gap-4">
+                    <Label htmlFor="color" className="text-right">
+                      Color
+                    </Label>
+                    <div className="col-span-3">
+                      <Input
+                        id="color"
+                        value={listingForm.color}
+                        onChange={(e) => setListingForm({...listingForm, color: e.target.value})}
+                        placeholder="e.g., Blue, Black"
+                      />
+                    </div>
+                  </div>
+                  
+                  <div className="grid grid-cols-4 items-center gap-4">
+                    <Label htmlFor="material" className="text-right">
+                      Material
+                    </Label>
+                    <div className="col-span-3">
+                      <Input
+                        id="material"
+                        value={listingForm.material}
+                        onChange={(e) => setListingForm({...listingForm, material: e.target.value})}
+                        placeholder="e.g., Cotton, Polyester"
+                      />
+                    </div>
+                  </div>
+                </div>
+                
+                <DialogFooter>
+                  <Button variant="outline" onClick={() => setIsListingDialogOpen(false)}>
+                    Cancel
+                  </Button>
+                  <Button onClick={handleCreateListing} disabled={saving}>
+                    {saving ? "Creating..." : "Create Listing"}
+                  </Button>
+                </DialogFooter>
+              </DialogContent>
+            </Dialog>
+          </div>
+        </div>
 
-          {/* Browse Listings Tab */}
-          {activeTab === "browse" && (
-            <div className="space-y-6">
-              {/* Filters */}
-              <div className="card-base p-6 space-y-4">
-                <h3 className="font-semibold text-foreground flex items-center gap-2">
-                  <Filter className="w-5 h-5" />
-                  Filter & Search
-                </h3>
-
-                <div className="space-y-4">
-                  {/* Search */}
+        {/* Browse Tab */}
+        {activeTab === "browse" && (
+          <div className="space-y-6 animate-fadeIn">
+            {/* Filters */}
+            <Card className="border-border/50 shadow-lg">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Filter className="w-5 h-5 text-primary" />
+                  Filter Listings
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
                   <div className="relative">
-                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-foreground/40" />
-                    <input
-                      type="text"
+                    <Search className="absolute left-3 top-3 w-4 h-4 text-foreground/50" />
+                    <Input
+                      id="search-listings"
                       placeholder="Search listings..."
-                      value={searchQuery}
-                      onChange={(e) => setSearchQuery(e.target.value)}
-                      className="w-full pl-10 pr-4 py-2 bg-background border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/50"
+                      className="pl-10"
+                      value={filter.search}
+                      onChange={(e) => setFilter({...filter, search: e.target.value})}
+                      aria-label="Search listings"
                     />
                   </div>
-
-                  {/* Condition Filter */}
-                  <div>
-                    <label className="text-sm font-medium text-foreground mb-2 block">
-                      Condition
-                    </label>
-                    <div className="flex flex-wrap gap-2">
-                      <button
-                        onClick={() => setSelectedCondition(null)}
-                        className={`px-3 py-1 rounded text-sm font-medium transition-colors ${
-                          selectedCondition === null
-                            ? "bg-primary text-primary-foreground"
-                            : "bg-muted text-foreground hover:bg-muted/80"
-                        }`}
-                      >
-                        All
-                      </button>
-                      {conditions.map((cond) => (
-                        <button
-                          key={cond}
-                          onClick={() => setSelectedCondition(cond)}
-                          className={`px-3 py-1 rounded text-sm font-medium transition-colors capitalize ${
-                            selectedCondition === cond
-                              ? "bg-primary text-primary-foreground"
-                              : "bg-muted text-foreground hover:bg-muted/80"
-                          }`}
-                        >
-                          {cond}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-
-                  {/* Category Filter */}
-                  <div>
-                    <label className="text-sm font-medium text-foreground mb-2 block">
-                      Category
-                    </label>
-                    <div className="flex flex-wrap gap-2">
-                      <button
-                        onClick={() => setSelectedCategory(null)}
-                        className={`px-3 py-1 rounded text-sm font-medium transition-colors ${
-                          selectedCategory === null
-                            ? "bg-primary text-primary-foreground"
-                            : "bg-muted text-foreground hover:bg-muted/80"
-                        }`}
-                      >
-                        All
-                      </button>
-                      {categories.map((cat) => (
-                        <button
-                          key={cat}
-                          onClick={() => setSelectedCategory(cat)}
-                          className={`px-3 py-1 rounded text-sm font-medium transition-colors capitalize ${
-                            selectedCategory === cat
-                              ? "bg-primary text-primary-foreground"
-                              : "bg-muted text-foreground hover:bg-muted/80"
-                          }`}
-                        >
-                          {cat}
-                        </button>
-                      ))}
-                    </div>
+                  
+                  <Select 
+                    value={filter.category} 
+                    onValueChange={(value) => setFilter({...filter, category: value})}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Category" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="">All Categories</SelectItem>
+                      <SelectItem value="tops">Tops</SelectItem>
+                      <SelectItem value="bottoms">Bottoms</SelectItem>
+                      <SelectItem value="dresses">Dresses</SelectItem>
+                      <SelectItem value="outerwear">Outerwear</SelectItem>
+                      <SelectItem value="shoes">Shoes</SelectItem>
+                      <SelectItem value="accessories">Accessories</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  
+                  <Select 
+                    value={filter.listingType} 
+                    onValueChange={(value) => setFilter({...filter, listingType: value})}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Listing Type" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="">All Types</SelectItem>
+                      <SelectItem value="sale">For Sale</SelectItem>
+                      <SelectItem value="swap">For Swap</SelectItem>
+                      <SelectItem value="gift">For Gift</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  
+                  <div className="flex gap-2">
+                    <Input
+                      id="min-price"
+                      type="number"
+                      placeholder="Min Price"
+                      value={filter.minPrice}
+                      onChange={(e) => setFilter({...filter, minPrice: e.target.value})}
+                      aria-label="Minimum price filter"
+                    />
+                    <Input
+                      id="max-price"
+                      type="number"
+                      placeholder="Max Price"
+                      value={filter.maxPrice}
+                      onChange={(e) => setFilter({...filter, maxPrice: e.target.value})}
+                      aria-label="Maximum price filter"
+                    />
                   </div>
                 </div>
+              </CardContent>
+            </Card>
+            
+            {/* Listings */}
+            {loading ? (
+              <div className="flex justify-center py-12">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
               </div>
-
-              {/* Listings Grid */}
-              {filteredListings.length > 0 ? (
-                <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-                  {filteredListings.map((listing: any) => (
-                    <div key={listing._id} className="card-base overflow-hidden group hover:border-primary/30">
-                      {/* Image */}
-                      <div className="relative h-48 bg-muted/50 overflow-hidden">
-                        <img
-                          src={listing.imageUrl}
-                          alt={listing.title}
-                          className="w-full h-full object-cover group-hover:scale-110 transition-transform"
-                        />
-                        <div className="absolute top-2 right-2 px-3 py-1 bg-primary text-primary-foreground rounded-full text-xs font-bold capitalize">
-                          {listing.condition}
-                        </div>
-                      </div>
-
-                      {/* Info */}
-                      <div className="p-4 space-y-3">
+            ) : filteredListings.length > 0 ? (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {filteredListings.map((listing) => (
+                  <Card key={listing._id} className="hover:shadow-lg transition-shadow duration-300">
+                    <CardHeader className="p-4">
+                      <div className="flex justify-between items-start">
                         <div>
-                          <h3 className="font-semibold text-foreground truncate">
-                            {listing.title}
-                          </h3>
-                          <p className="text-sm text-foreground/60">
-                            {listing.brand || "Unknown brand"}
-                          </p>
+                          <CardTitle className="text-lg">{listing.title}</CardTitle>
+                          <CardDescription className="flex items-center gap-1 mt-1">
+                            <User className="w-4 h-4" />
+                            <span>User ID: {listing.userId.substring(0, 8)}...</span>
+                          </CardDescription>
                         </div>
-
-                        {/* Rating */}
-                        <div className="flex items-center gap-1">
-                          {[...Array(5)].map((_, i) => (
-                            <Star
-                              key={i}
-                              className={`w-4 h-4 ${
-                                i < Math.round(listing.rating)
-                                  ? "fill-accent text-accent"
-                                  : "text-foreground/20"
-                              }`}
-                            />
-                          ))}
-                          <span className="text-xs text-foreground/60 ml-2">
-                            ({listing.reviews?.length || 0})
-                          </span>
-                        </div>
-
-                        {/* Details */}
-                        <div className="text-xs text-foreground/70 space-y-1">
-                          <p>Size: {listing.size || "Unknown"}</p>
-                          <p className="capitalize">Category: {listing.category}</p>
-                        </div>
-
-                        {/* Actions */}
-                        <div className="pt-3 border-t border-border/40 flex gap-2">
-                          <button
-                            onClick={() => handleCreateSwapRequest(listing._id)}
-                            className="flex-1 py-2 bg-primary text-primary-foreground rounded font-medium text-sm hover:bg-primary/90 transition-colors flex items-center justify-center gap-1"
-                          >
-                            <Shuffle className="w-4 h-4" />
-                            Swap
-                          </button>
-                          <button className="flex-1 py-2 border border-border bg-background rounded font-medium text-sm hover:bg-muted/50 transition-colors flex items-center justify-center gap-1">
-                            <Heart className="w-4 h-4" />
-                            Save
-                          </button>
-                        </div>
+                        <Badge variant="secondary" className="capitalize">
+                          {listingTypeLabels[listing.listingType]}
+                        </Badge>
                       </div>
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                <div className="card-base p-12 text-center">
-                  <AlertCircle className="w-12 h-12 text-foreground/40 mx-auto mb-4" />
-                  <p className="text-foreground/70">No listings found</p>
-                </div>
-              )}
-            </div>
-          )}
-
-          {/* My Listings Tab */}
-          {activeTab === "myListings" && (
-            <div className="space-y-6">
-              <button className="px-6 py-3 bg-primary text-primary-foreground rounded-lg font-semibold hover:bg-primary/90 transition-colors flex items-center gap-2">
-                <Plus className="w-5 h-5" />
-                Create New Listing
-              </button>
-
-              {myListings?.count > 0 ? (
-                <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-                  {myListings.data.map((listing: any) => (
-                    <div key={listing._id} className="card-base p-6 space-y-4">
-                      <div className="flex items-start justify-between">
-                        <h3 className="font-semibold text-foreground">
-                          {listing.title}
-                        </h3>
-                        <span className={`px-2 py-1 rounded text-xs font-bold ${
-                          listing.status === "active"
-                            ? "bg-green-100 text-green-800"
-                            : "bg-gray-100 text-gray-800"
-                        }`}>
-                          {listing.status}
-                        </span>
-                      </div>
-                      <p className="text-sm text-foreground/60">
-                        {listing.swapRequests?.length || 0} swap requests
-                      </p>
-                      <div className="flex gap-2">
-                        <button className="flex-1 py-2 border border-border rounded font-medium text-sm hover:bg-muted/50">
-                          Edit
-                        </button>
-                        <button className="flex-1 py-2 border border-destructive text-destructive rounded font-medium text-sm hover:bg-destructive/10">
-                          Remove
-                        </button>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                <div className="card-base p-12 text-center space-y-4">
-                  <AlertCircle className="w-12 h-12 text-foreground/40 mx-auto" />
-                  <p className="text-foreground/70">You haven't created any listings yet</p>
-                </div>
-              )}
-            </div>
-          )}
-
-          {/* Swap Requests Tab */}
-          {activeTab === "requests" && (
-            <div className="space-y-8">
-              {/* Incoming Requests */}
-              <div className="space-y-4">
-                <h3 className="text-xl font-semibold text-foreground flex items-center gap-2">
-                  <MessageSquare className="w-6 h-6 text-primary" />
-                  Incoming Requests ({incomingRequests.length})
-                </h3>
-
-                {incomingRequests.length > 0 ? (
-                  <div className="space-y-4">
-                    {incomingRequests.map((request: any) => (
-                      <div
-                        key={request._id}
-                        className="card-base p-6 space-y-4"
-                      >
-                        <div className="flex items-start justify-between">
-                          <div>
-                            <h4 className="font-semibold text-foreground">
-                              Swap request from {request.fromUserId}
-                            </h4>
-                            <p className="text-sm text-foreground/60 mt-1">
-                              {request.message || "No message provided"}
-                            </p>
+                    </CardHeader>
+                    
+                    <CardContent className="p-4 pt-0">
+                      <div className="space-y-2">
+                        <div className="flex justify-between">
+                          <span className="text-sm text-foreground/70">Condition</span>
+                          <span className="text-sm font-medium">{conditionLabels[listing.condition]}</span>
+                        </div>
+                        
+                        <div className="flex justify-between">
+                          <span className="text-sm text-foreground/70">Size</span>
+                          <span className="text-sm font-medium">{listing.size}</span>
+                        </div>
+                        
+                        <div className="flex justify-between">
+                          <span className="text-sm text-foreground/70">Category</span>
+                          <span className="text-sm font-medium capitalize">{listing.category}</span>
+                        </div>
+                        
+                        {listing.price > 0 && (
+                          <div className="flex justify-between">
+                            <span className="text-sm text-foreground/70">Price</span>
+                            <span className="text-sm font-medium">${listing.price.toFixed(2)}</span>
                           </div>
-                          <span className={`px-3 py-1 rounded-full text-xs font-bold ${
-                            request.status === "pending"
-                              ? "bg-yellow-100 text-yellow-800"
-                              : request.status === "accepted"
-                              ? "bg-green-100 text-green-800"
-                              : "bg-red-100 text-red-800"
-                          }`}>
-                            {request.status}
-                          </span>
-                        </div>
-
-                        {request.status === "pending" && (
-                          <div className="flex gap-2 pt-2">
-                            <button
-                              onClick={() => handleAcceptRequest(request._id)}
-                              className="flex-1 py-2 bg-green-600 text-white rounded font-medium hover:bg-green-700 transition-colors flex items-center justify-center gap-2"
-                            >
-                              <Check className="w-4 h-4" />
-                              Accept
-                            </button>
-                            <button
-                              onClick={() => handleRejectRequest(request._id)}
-                              className="flex-1 py-2 bg-red-600 text-white rounded font-medium hover:bg-red-700 transition-colors flex items-center justify-center gap-2"
-                            >
-                              <X className="w-4 h-4" />
-                              Reject
-                            </button>
+                        )}
+                        
+                        {listing.ecoScore > 0 && (
+                          <div className="flex justify-between items-center">
+                            <span className="text-sm text-foreground/70">Eco Score</span>
+                            <div className="flex items-center gap-1">
+                              <Leaf className="w-4 h-4 text-green-500" />
+                              <span className="text-sm font-medium">{listing.ecoScore}/100</span>
+                            </div>
                           </div>
                         )}
                       </div>
+                      
+                      <p className="text-sm text-foreground/70 mt-3 line-clamp-2">
+                        {listing.description}
+                      </p>
+                    </CardContent>
+                    
+                    <CardFooter className="p-4 pt-0 flex justify-between">
+                      <div className="flex items-center gap-4">
+                        <button 
+                          onClick={() => handleLikeListing(listing._id)}
+                          className="flex items-center gap-1 text-foreground/50 hover:text-destructive transition-colors"
+                        >
+                          <Heart className="w-4 h-4" />
+                          <span className="text-sm">{listing.likes}</span>
+                        </button>
+                        <div className="flex items-center gap-1 text-foreground/50">
+                          <Eye className="w-4 h-4" />
+                          <span className="text-sm">{listing.views}</span>
+                        </div>
+                      </div>
+                      <Button size="sm" variant="outline">
+                        View Details
+                      </Button>
+                    </CardFooter>
+                  </Card>
+                ))}
+              </div>
+            ) : (
+              <div className="text-center py-12">
+                <ShoppingCart className="w-16 h-16 text-foreground/20 mx-auto mb-4" />
+                <h3 className="text-lg font-medium text-foreground mb-2">No Listings Found</h3>
+                <p className="text-foreground/70 mb-4">
+                  Try adjusting your filters or be the first to create a listing
+                </p>
+                <Button onClick={() => setIsListingDialogOpen(true)}>
+                  <Plus className="w-4 h-4 mr-2" />
+                  Create Listing
+                </Button>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* My Listings Tab */}
+        {activeTab === "myListings" && (
+          <div className="space-y-6 animate-fadeIn">
+            <Card className="border-border/50 shadow-lg">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Tag className="w-5 h-5 text-primary" />
+                  My Listings
+                </CardTitle>
+                <CardDescription>
+                  Manage your marketplace listings
+                </CardDescription>
+              </CardHeader>
+              
+              <CardContent>
+                {myListings.length > 0 ? (
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    {myListings.map((listing) => (
+                      <Card key={listing._id} className="hover:shadow-lg transition-shadow duration-300">
+                        <CardHeader className="p-4">
+                          <div className="flex justify-between items-start">
+                            <div>
+                              <CardTitle className="text-lg">{listing.title}</CardTitle>
+                              <CardDescription className="flex items-center gap-1 mt-1">
+                                <Badge variant="outline" className="capitalize">
+                                  {listing.status}
+                                </Badge>
+                              </CardDescription>
+                            </div>
+                            <Badge variant="secondary" className="capitalize">
+                              {listingTypeLabels[listing.listingType]}
+                            </Badge>
+                          </div>
+                        </CardHeader>
+                        
+                        <CardContent className="p-4 pt-0">
+                          <div className="space-y-2">
+                            <div className="flex justify-between">
+                              <span className="text-sm text-foreground/70">Condition</span>
+                              <span className="text-sm font-medium">{conditionLabels[listing.condition]}</span>
+                            </div>
+                            
+                            <div className="flex justify-between">
+                              <span className="text-sm text-foreground/70">Size</span>
+                              <span className="text-sm font-medium">{listing.size}</span>
+                            </div>
+                            
+                            {listing.price > 0 && (
+                              <div className="flex justify-between">
+                                <span className="text-sm text-foreground/70">Price</span>
+                                <span className="text-sm font-medium">${listing.price.toFixed(2)}</span>
+                              </div>
+                            )}
+                            
+                            {listing.ecoScore > 0 && (
+                              <div className="flex justify-between items-center">
+                                <span className="text-sm text-foreground/70">Eco Score</span>
+                                <div className="flex items-center gap-1">
+                                  <Leaf className="w-4 h-4 text-green-500" />
+                                  <span className="text-sm font-medium">{listing.ecoScore}/100</span>
+                                </div>
+                              </div>
+                            )}
+                          </div>
+                          
+                          <p className="text-sm text-foreground/70 mt-3 line-clamp-2">
+                            {listing.description}
+                          </p>
+                        </CardContent>
+                        
+                        <CardFooter className="p-4 pt-0 flex justify-between">
+                          <div className="flex items-center gap-4">
+                            <div className="flex items-center gap-1 text-foreground/50">
+                              <Heart className="w-4 h-4" />
+                              <span className="text-sm">{listing.likes}</span>
+                            </div>
+                            <div className="flex items-center gap-1 text-foreground/50">
+                              <Eye className="w-4 h-4" />
+                              <span className="text-sm">{listing.views}</span>
+                            </div>
+                          </div>
+                          <div className="flex gap-2">
+                            <Button size="sm" variant="outline">
+                              Edit
+                            </Button>
+                            <Button 
+                              size="sm" 
+                              variant="destructive" 
+                              onClick={() => handleDeleteListing(listing._id)}
+                            >
+                              Delete
+                            </Button>
+                          </div>
+                        </CardFooter>
+                      </Card>
                     ))}
                   </div>
                 ) : (
-                  <div className="card-base p-8 text-center text-foreground/60">
-                    No incoming requests
+                  <div className="text-center py-12">
+                    <Tag className="w-16 h-16 text-foreground/20 mx-auto mb-4" />
+                    <h3 className="text-lg font-medium text-foreground mb-2">No Listings Yet</h3>
+                    <p className="text-foreground/70 mb-4">
+                      Create your first listing to start participating in the circular marketplace
+                    </p>
+                    <Button onClick={() => setIsListingDialogOpen(true)}>
+                      <Plus className="w-4 h-4 mr-2" />
+                      Create Listing
+                    </Button>
                   </div>
                 )}
-              </div>
+              </CardContent>
+            </Card>
+          </div>
+        )}
 
-              {/* Outgoing Requests */}
-              <div className="space-y-4">
-                <h3 className="text-xl font-semibold text-foreground flex items-center gap-2">
-                  <Shuffle className="w-6 h-6 text-accent" />
-                  Your Requests ({outgoingRequests.length})
-                </h3>
-
-                {outgoingRequests.length > 0 ? (
+        {/* Requests Tab */}
+        {activeTab === "requests" && (
+          <div className="space-y-6 animate-fadeIn">
+            <Card className="border-border/50 shadow-lg">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <RefreshCw className="w-5 h-5 text-primary" />
+                  Swap Requests
+                </CardTitle>
+                <CardDescription>
+                  Manage requests for your items and items you're interested in
+                </CardDescription>
+              </CardHeader>
+              
+              <CardContent>
+                {swapRequests.length > 0 ? (
                   <div className="space-y-4">
-                    {outgoingRequests.map((request: any) => (
-                      <div key={request._id} className="card-base p-6">
-                        <div className="flex items-start justify-between">
+                    {swapRequests.map((request) => (
+                      <div key={request._id} className="border border-border/50 rounded-lg p-4 hover:bg-muted/50 transition-colors">
+                        <div className="flex justify-between items-start">
                           <div>
-                            <h4 className="font-semibold text-foreground">
-                              Requested from {request.toUserId}
-                            </h4>
-                            <p className="text-sm text-foreground/60 mt-1">
-                              Status: <span className="font-medium">{request.status}</span>
+                            <div className="flex items-center gap-2 mb-1">
+                              <Badge variant="secondary" className="capitalize">
+                                {request.status}
+                              </Badge>
+                              <span className="text-sm text-foreground/70">
+                                {new Date(request.createdAt).toLocaleDateString()}
+                              </span>
+                            </div>
+                            <p className="text-foreground/80">
+                              {request.message}
                             </p>
                           </div>
-                          <span className={`px-3 py-1 rounded-full text-xs font-bold ${
-                            request.status === "pending"
-                              ? "bg-yellow-100 text-yellow-800"
-                              : request.status === "accepted"
-                              ? "bg-green-100 text-green-800"
-                              : "bg-red-100 text-red-800"
-                          }`}>
-                            {request.status}
-                          </span>
+                          <div className="flex gap-2">
+                            {request.status === "pending" && (
+                              <>
+                                <Button 
+                                  size="sm" 
+                                  variant="outline" 
+                                  onClick={() => handleAcceptRequest(request._id)}
+                                >
+                                  Accept
+                                </Button>
+                                <Button 
+                                  size="sm" 
+                                  variant="destructive" 
+                                  onClick={() => handleRejectRequest(request._id)}
+                                >
+                                  Reject
+                                </Button>
+                              </>
+                            )}
+                            {request.status === "accepted" && (
+                              <Button size="sm" variant="outline">
+                                Mark as Complete
+                              </Button>
+                            )}
+                          </div>
                         </div>
                       </div>
                     ))}
                   </div>
                 ) : (
-                  <div className="card-base p-8 text-center text-foreground/60">
-                    You haven't sent any swap requests yet
+                  <div className="text-center py-12">
+                    <RefreshCw className="w-16 h-16 text-foreground/20 mx-auto mb-4" />
+                    <h3 className="text-lg font-medium text-foreground mb-2">No Swap Requests</h3>
+                    <p className="text-foreground/70">
+                      When someone requests to swap with you, you'll see it here
+                    </p>
                   </div>
                 )}
-              </div>
-            </div>
-          )}
-
-          {/* Benefits Section */}
-          <div className="bg-gradient-to-r from-primary/10 to-nature/10 rounded-xl border border-primary/20 p-8 md:p-12 space-y-6">
-            <h2 className="text-2xl font-semibold text-foreground">
-              Why Swap Clothes?
-            </h2>
-            <div className="grid md:grid-cols-3 gap-6">
-              <div className="space-y-2">
-                <div className="text-4xl">♻️</div>
-                <h3 className="font-semibold text-foreground">Reduce Waste</h3>
-                <p className="text-foreground/70 text-sm">
-                  Give your unused clothes a second life instead of throwing them away.
-                </p>
-              </div>
-              <div className="space-y-2">
-                <div className="text-4xl">💚</div>
-                <h3 className="font-semibold text-foreground">Save Money</h3>
-                <p className="text-foreground/70 text-sm">
-                  Get new clothes without spending money or contributing to fast fashion.
-                </p>
-              </div>
-              <div className="space-y-2">
-                <div className="text-4xl">🌍</div>
-                <h3 className="font-semibold text-foreground">Save the Planet</h3>
-                <p className="text-foreground/70 text-sm">
-                  Each swap reduces carbon emissions and water usage from manufacturing.
-                </p>
-              </div>
-            </div>
+              </CardContent>
+            </Card>
           </div>
-        </div>
-      </main>
-    </Layout>
+        )}
+      </div>
+    </div>
   );
 }

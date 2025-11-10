@@ -1,0 +1,29 @@
+.cursor-dot {
+  position: fixed;
+  pointer-events: none;
+  z-index: 9999;
+  border-radius: 50%;
+  mix-blend-mode: difference;
+}
+
+.cursor-ring {
+  position: fixed;
+  pointer-events: none;
+  z-index: 9998;
+  border-radius: 50%;
+  mix-blend-mode: difference;
+}
+
+.cursor-dot.clicking {
+  opacity: 0.8;
+  transform: scale(1.5);
+}
+
+.cursor-ring.clicking {
+  opacity: 0.5;
+  transform: scale(0.8);
+}
+
+.cursor-ring.pointer {
+  transform: scale(1.5);
+}

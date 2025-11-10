@@ -36,29 +36,41 @@ export default function SignIn() {
 
     setLoading(true);
     try {
-      const response = await fetch("/api/users", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          userId: `user-${Date.now()}`,
-          email: formData.email,
-          name: formData.email.split("@")[0],
-          profile: {
-            stylePreferences: [],
-          },
-        }),
-      });
-
-      if (!response.ok) throw new Error("Sign in failed");
-
-      const data = await response.json();
-      localStorage.setItem("userId", data.data.userId);
-      localStorage.setItem("userName", data.data.name);
-
+      // Import auth service dynamically to avoid SSR issues
+      const { login } = await import('../services/auth');
+      
+      // Call login API
+      const response = await login(formData.email, formData.password);
+      
+      // Store auth data properly
+      localStorage.setItem('token', response.token);
+      localStorage.setItem('userId', response.user.id);
+      localStorage.setItem('userName', response.user.name);
+      
       toast.success("Signed in successfully!");
       navigate("/dashboard");
-    } catch (error) {
-      toast.error("Failed to sign in. Please try again.");
+    } catch (error: any) {
+      toast.error(error.message || "Failed to sign in. Please try again.");
+    } finally {
+      setLoading(false);
+    }
+  };
+  
+  const handleSocialLogin = async (provider: string) => {
+    setLoading(true);
+    
+    try {
+      // In a real app, this would integrate with social auth providers
+      // For now, we'll simulate a successful login
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      localStorage.setItem('user', JSON.stringify({ 
+        user: { name: 'Social User', email: 'social@example.com' },
+        token: 'social-auth-token'
+      }));
+      toast.success(`Signed in with ${provider} successfully!`);
+      navigate("/dashboard");
+    } catch (error: any) {
+      toast.error(`${provider} login failed`);
     } finally {
       setLoading(false);
     }
@@ -73,19 +85,27 @@ export default function SignIn() {
     navigate("/dashboard");
   };
 
+  const handleLogout = () => {
+    localStorage.removeItem("token");
+    localStorage.removeItem("userId");
+    localStorage.removeItem("userName");
+    toast.success("Logged out successfully");
+    navigate("/signin");
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-primary/5 via-background to-nature/5 flex items-center justify-center px-4 py-12">
       <div className="w-full max-w-md">
         {/* Logo */}
-        <div className="flex items-center justify-center gap-2 mb-8">
+        <div className="flex items-center justify-center gap-2 mb-8 hover-float3d">
           <div className="w-10 h-10 rounded-lg bg-primary flex items-center justify-center">
             <Leaf className="w-6 h-6 text-primary-foreground" />
           </div>
-          <span className="text-2xl font-bold text-foreground">EcoStyle</span>
+          <span className="text-2xl font-bold text-foreground">EcoWardrobe AI</span>
         </div>
 
         {/* Card */}
-        <div className="bg-card border border-border/50 rounded-2xl p-8 shadow-lg">
+        <div className="bg-card border border-border/50 rounded-2xl p-8 shadow-lg hover-tilt3d">
           <div className="space-y-2 mb-8">
             <h1 className="text-2xl font-bold text-foreground">Welcome Back</h1>
             <p className="text-foreground/70">
@@ -93,116 +113,161 @@ export default function SignIn() {
             </p>
           </div>
 
-          <form onSubmit={handleSubmit} className="space-y-5">
-            {/* Email */}
-            <div className="space-y-2">
-              <label
-                htmlFor="email"
-                className="text-sm font-medium text-foreground"
-              >
-                Email Address
-              </label>
-              <div className="relative">
-                <Mail className="absolute left-3 top-3 w-5 h-5 text-foreground/50" />
-                <input
-                  id="email"
-                  name="email"
-                  type="email"
-                  value={formData.email}
-                  onChange={handleChange}
-                  placeholder="you@example.com"
-                  className="w-full pl-10 pr-4 py-2.5 bg-muted border border-border/50 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition-all"
-                  disabled={loading}
-                />
+          <form onSubmit={handleSubmit} className="space-y-6">
+            <div className="space-y-4">
+              <div className="space-y-2">
+                <label
+                  htmlFor="email"
+                  className="text-sm font-medium text-foreground"
+                >
+                  Email
+                </label>
+                <div className="relative group">
+                  <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground group-hover:text-primary transition-colors duration-200" />
+                  <input
+                    id="email"
+                    name="email"
+                    type="email"
+                    autoComplete="email"
+                    required
+                    value={formData.email}
+                    onChange={handleChange}
+                    className="w-full h-11 pl-10 pr-4 rounded-md border border-input bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary/30 transition-all duration-200"
+                    placeholder="you@example.com"
+                  />
+                  <div className="absolute bottom-0 left-0 h-0.5 w-0 bg-primary group-hover:w-full transition-all duration-300"></div>
+                </div>
               </div>
-            </div>
 
-            {/* Password */}
-            <div className="space-y-2">
-              <div className="flex items-center justify-between">
+              <div className="space-y-2">
                 <label
                   htmlFor="password"
                   className="text-sm font-medium text-foreground"
                 >
                   Password
                 </label>
-                <Link
-                  to="#"
-                  className="text-sm text-primary hover:text-primary/80 font-medium"
-                >
-                  Forgot?
-                </Link>
-              </div>
-              <div className="relative">
-                <Lock className="absolute left-3 top-3 w-5 h-5 text-foreground/50" />
-                <input
-                  id="password"
-                  name="password"
-                  type={showPassword ? "text" : "password"}
-                  value={formData.password}
-                  onChange={handleChange}
-                  placeholder="••••••••"
-                  className="w-full pl-10 pr-10 py-2.5 bg-muted border border-border/50 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition-all"
-                  disabled={loading}
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-3 top-3 text-foreground/50 hover:text-foreground transition-colors"
-                  disabled={loading}
-                >
-                  {showPassword ? (
-                    <EyeOff className="w-5 h-5" />
-                  ) : (
-                    <Eye className="w-5 h-5" />
-                  )}
-                </button>
+                <div className="relative group">
+                  <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground group-hover:text-primary transition-colors duration-200" />
+                  <input
+                    id="password"
+                    name="password"
+                    type={showPassword ? "text" : "password"}
+                    autoComplete="current-password"
+                    required
+                    value={formData.password}
+                    onChange={handleChange}
+                    className="w-full h-11 pl-10 pr-12 rounded-md border border-input bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary/30 transition-all duration-200"
+                    placeholder="••••••••"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors duration-200"
+                  >
+                    {showPassword ? (
+                      <EyeOff className="w-5 h-5" />
+                    ) : (
+                      <Eye className="w-5 h-5" />
+                    )}
+                  </button>
+                  <div className="absolute bottom-0 left-0 h-0.5 w-0 bg-primary group-hover:w-full transition-all duration-300"></div>
+                </div>
               </div>
             </div>
 
-            {/* Submit Button */}
-            <button
-              type="submit"
-              disabled={loading}
-              className="w-full py-2.5 bg-primary text-primary-foreground rounded-lg font-semibold hover:bg-primary/90 active:bg-primary/80 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              {loading ? "Signing In..." : "Sign In"}
-            </button>
+            <div className="flex items-center justify-between">
+              <div className="flex items-center">
+                <input
+                  id="remember-me"
+                  name="remember-me"
+                  type="checkbox"
+                  className="h-4 w-4 rounded border-border text-primary focus:ring-primary/30"
+                />
+                <label
+                  htmlFor="remember-me"
+                  className="ml-2 block text-sm text-foreground/70"
+                >
+                  Remember me
+                </label>
+              </div>
+
+              <div className="text-sm">
+                <a
+                  href="#"
+                  className="font-medium text-primary hover:text-primary/80 transition-colors duration-200"
+                >
+                  Forgot password?
+                </a>
+              </div>
+            </div>
+
+            <div className="space-y-4">
+              <button
+                type="submit"
+                disabled={loading}
+                className="w-full h-11 px-4 py-2 rounded-md bg-primary text-primary-foreground hover:bg-primary/90 focus:outline-none focus:ring-2 focus:ring-primary/30 flex items-center justify-center transition-all duration-200 hover:translate-y-[-2px] hover:shadow-lg"
+              >
+                {loading ? (
+                  <span className="animate-pulse">Signing in...</span>
+                ) : (
+                  "Sign in"
+                )}
+              </button>
+
+              <button
+                type="button"
+                onClick={handleDemoLogin}
+                className="w-full h-11 px-4 py-2 rounded-md border border-input bg-background text-foreground hover:bg-muted/50 focus:outline-none focus:ring-2 focus:ring-primary/30 transition-all duration-200 hover:translate-y-[-2px]"
+              >
+                Continue as Demo User
+              </button>
+            </div>
           </form>
 
-          {/* Divider */}
-          <div className="relative my-6">
-            <div className="absolute inset-0 flex items-center">
-              <div className="w-full border-t border-border/50"></div>
-            </div>
-            <div className="relative flex justify-center text-sm">
-              <span className="px-2 bg-card text-foreground/50">
-                Or continue as
-              </span>
-            </div>
+          <div className="mt-8 pt-6 border-t border-border/40 text-center text-sm">
+            <span className="text-foreground/70">Don't have an account?</span>{" "}
+            <Link
+              to="/signup"
+              className="font-medium text-primary hover:text-primary/80 transition-colors duration-200"
+            >
+              Sign up
+            </Link>
           </div>
-
-          {/* Demo Button */}
-          <button
-            type="button"
-            onClick={handleDemoLogin}
-            className="w-full py-2.5 border border-border/50 text-foreground rounded-lg font-semibold hover:bg-muted/50 transition-all"
-            disabled={loading}
-          >
-            Demo User
-          </button>
-
-          {/* Sign Up Link */}
-          <div className="mt-6 text-center">
-            <p className="text-foreground/70">
-              Don't have an account?{" "}
-              <Link
-                to="/signup"
-                className="text-primary hover:text-primary/80 font-semibold"
-              >
-                Create one
-              </Link>
-            </p>
+          
+          <div className="mt-6 flex items-center justify-center space-x-4">
+            <button 
+              onClick={() => handleSocialLogin('Facebook')}
+              disabled={loading}
+              aria-label="Sign in with Facebook"
+              title="Sign in with Facebook"
+              className="w-10 h-10 rounded-full bg-[#4267B2] text-white flex items-center justify-center hover:opacity-90 transition-opacity"
+            >
+              <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                <path fillRule="evenodd" d="M22 12c0-5.523-4.477-10-10-10S2 6.477 2 12c0 4.991 3.657 9.128 8.438 9.878v-6.987h-2.54V12h2.54V9.797c0-2.506 1.492-3.89 3.777-3.89 1.094 0 2.238.195 2.238.195v2.46h-1.26c-1.243 0-1.63.771-1.63 1.562V12h2.773l-.443 2.89h-2.33v6.988C18.343 21.128 22 16.991 22 12z" clipRule="evenodd"></path>
+              </svg>
+            </button>
+            <button 
+              onClick={() => handleSocialLogin('Twitter')}
+              disabled={loading}
+              aria-label="Sign in with Twitter"
+              title="Sign in with Twitter"
+              className="w-10 h-10 rounded-full bg-[#1DA1F2] text-white flex items-center justify-center hover:opacity-90 transition-opacity"
+            >
+              <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M8.29 20.251c7.547 0 11.675-6.253 11.675-11.675 0-.178 0-.355-.012-.53A8.348 8.348 0 0022 5.92a8.19 8.19 0 01-2.357.646 4.118 4.118 0 001.804-2.27 8.224 8.224 0 01-2.605.996 4.107 4.107 0 00-6.993 3.743 11.65 11.65 0 01-8.457-4.287 4.106 4.106 0 001.27 5.477A4.072 4.072 0 012.8 9.713v.052a4.105 4.105 0 003.292 4.022 4.095 4.095 0 01-1.853.07 4.108 4.108 0 003.834 2.85A8.233 8.233 0 012 18.407a11.616 11.616 0 006.29 1.84"></path>
+              </svg>
+            </button>
+            <button 
+              onClick={() => handleSocialLogin('Google')}
+              disabled={loading}
+              aria-label="Sign in with Google"
+              title="Sign in with Google"
+              className="w-10 h-10 rounded-full bg-[#DB4437] text-white flex items-center justify-center hover:opacity-90 transition-opacity"
+            >
+              <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M12.48 10.92v3.28h7.84c-.24 1.84-.853 3.187-1.787 4.133-1.147 1.147-2.933 2.4-6.053 2.4-4.827 0-8.6-3.893-8.6-8.72s3.773-8.72 8.6-8.72c2.6 0 4.507 1.027 5.907 2.347l2.307-2.307C18.747 1.44 16.133 0 12.48 0 5.867 0 .307 5.387.307 12s5.56 12 12.173 12c3.573 0 6.267-1.173 8.373-3.36 2.16-2.16 2.84-5.213 2.84-7.667 0-.76-.053-1.467-.173-2.053H12.48z"></path>
+              </svg>
+            </button>
           </div>
         </div>
 

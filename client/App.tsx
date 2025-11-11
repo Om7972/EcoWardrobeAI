@@ -25,6 +25,12 @@ import ImpactTracker from "./pages/ImpactTracker";
 import EcoStore from "./pages/EcoStore";
 import Community from "./pages/Community";
 import AIServices from "./pages/AIServices";
+import EcoStylist from "./pages/EcoStylist";
+import ARFit from "./pages/ARFit";
+import SwapEvents from "./pages/SwapEvents";
+import FabricCare from "./pages/FabricCare";
+import SustainabilityFeed from "./pages/SustainabilityFeed";
+import Profile from "./pages/Profile";
 
 const queryClient = new QueryClient();
 
@@ -34,7 +40,7 @@ export default function App() {
       <TooltipProvider>
         <Toaster />
         <Sonner />
-        <BrowserRouter>
+        <BrowserRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
           <Routes>
             <Route path="/" element={<Index />} />
             <Route path="/signup" element={<SignUp />} />
@@ -122,6 +128,36 @@ export default function App() {
             <Route path="/ai-services" element={
               <ProtectedRoute>
                 <AIServices />
+              </ProtectedRoute>
+            } />
+            <Route path="/eco-stylist" element={
+              <ProtectedRoute>
+                <EcoStylist />
+              </ProtectedRoute>
+            } />
+            <Route path="/ar-fit" element={
+              <ProtectedRoute>
+                <ARFit />
+              </ProtectedRoute>
+            } />
+            <Route path="/swap-events" element={
+              <ProtectedRoute>
+                <SwapEvents />
+              </ProtectedRoute>
+            } />
+            <Route path="/fabric-care" element={
+              <ProtectedRoute>
+                <FabricCare />
+              </ProtectedRoute>
+            } />
+            <Route path="/sustainability-feed" element={
+              <ProtectedRoute>
+                <SustainabilityFeed />
+              </ProtectedRoute>
+            } />
+            <Route path="/profile" element={
+              <ProtectedRoute>
+                <Profile />
               </ProtectedRoute>
             } />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}

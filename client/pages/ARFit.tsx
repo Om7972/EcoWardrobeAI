@@ -224,11 +224,7 @@ export default function ARFit() {
                       {/* AR Overlay - Simulated item overlay */}
                       {selectedItem && (
                         <div 
-                          className="absolute inset-0 flex items-center justify-center"
-                          style={{
-                            transform: `scale(${zoomLevel}) rotate(${rotation}deg)`,
-                            transition: 'transform 0.3s ease'
-                          }}
+                          className="absolute inset-0 flex items-center justify-center ar-transform-element"
                         >
                           <div className="relative">
                             <div className="bg-white/20 backdrop-blur-sm rounded-lg p-4 border border-white/30">

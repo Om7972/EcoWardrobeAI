@@ -16,7 +16,10 @@ import {
   Users,
   TrendingUp,
   Plus,
-  Sparkles
+  Sparkles,
+  Leaf,
+  Droplets,
+  Recycle
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -357,9 +360,9 @@ export default function EcoStylist() {
                   <div className="flex justify-start">
                     <div className="bg-muted rounded-lg p-4">
                       <div className="flex space-x-2">
-                        <div className="w-2 h-2 rounded-full bg-foreground animate-bounce"></div>
-                        <div className="w-2 h-2 rounded-full bg-foreground animate-bounce" style={{ animationDelay: '0.2s' }}></div>
-                        <div className="w-2 h-2 rounded-full bg-foreground animate-bounce" style={{ animationDelay: '0.4s' }}></div>
+                        <div className="w-2 h-2 rounded-full bg-foreground animate-bounce typing-dot-1"></div>
+                        <div className="w-2 h-2 rounded-full bg-foreground animate-bounce typing-dot-2"></div>
+                        <div className="w-2 h-2 rounded-full bg-foreground animate-bounce typing-dot-3"></div>
                       </div>
                     </div>
                   </div>

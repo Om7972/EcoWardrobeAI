@@ -5,6 +5,12 @@ interface User {
   userId: string;
   email: string;
   name: string;
+  bio?: string;
+  avatar?: string;
+  phone?: string;
+  location?: string;
+  preferences?: any;
+  notifications?: any;
 }
 
 export function useAuth() {
@@ -20,29 +26,63 @@ export function useAuth() {
     const token = localStorage.getItem("token");
     const userId = localStorage.getItem("userId");
     const userName = localStorage.getItem("userName");
+    const userDataStr = localStorage.getItem("userData");
 
     if (token && userId && userName) {
-      setUser({ userId, email: "", name: userName });
+      let userData: User = { userId, email: "", name: userName };
+      
+      // Load additional user data if available
+      if (userDataStr) {
+        try {
+          const parsedData = JSON.parse(userDataStr);
+          userData = { ...userData, ...parsedData };
+        } catch (e) {
+          console.error("Failed to parse user data:", e);
+        }
+      }
+      
+      setUser(userData);
     }
     setLoading(false);
   };
 
-  const login = (userData: { token: string; userId: string; name: string }) => {
+  const login = (userData: { token: string; userId: string; name: string; email?: string }) => {
     localStorage.setItem("token", userData.token);
     localStorage.setItem("userId", userData.userId);
     localStorage.setItem("userName", userData.name);
-    setUser({ userId: userData.userId, email: "", name: userData.name });
+    
+    const user: User = { 
+      userId: userData.userId, 
+      email: userData.email || "", 
+      name: userData.name 
+    };
+    
+    localStorage.setItem("userData", JSON.stringify(user));
+    setUser(user);
   };
 
   const logout = () => {
     localStorage.removeItem("token");
     localStorage.removeItem("userId");
     localStorage.removeItem("userName");
+    localStorage.removeItem("userData");
     setUser(null);
     navigate("/signin");
   };
 
+  const updateUser = (userData: Partial<User>) => {
+    setUser(prev => {
+      if (!prev) return null;
+      const updatedUser = { ...prev, ...userData };
+      
+      // Persist to localStorage
+      localStorage.setItem("userData", JSON.stringify(updatedUser));
+      
+      return updatedUser;
+    });
+  };
+
   const isAuthenticated = !!user;
 
-  return { user, loading, isAuthenticated, login, logout, checkAuthStatus };
+  return { user, loading, isAuthenticated, login, logout, checkAuthStatus, updateUser };
 }

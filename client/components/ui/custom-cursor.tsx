@@ -59,44 +59,14 @@ export function CustomCursor({
 
   // Apply cursor styles to the body
   useEffect(() => {
-    // Only apply custom cursor on desktop devices
-    const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
-    if (!isMobile) {
-      document.body.style.cursor = "none";
-    }
+    // Disable custom cursor - use default browser cursor
+    document.body.style.cursor = "auto";
     
     return () => {
       document.body.style.cursor = "auto";
     };
   }, []);
 
-  if (!visible) return null;
-
-  return (
-    <>
-      {/* Dot cursor */}
-      <div
-        className={`cursor-dot ${isClicking ? 'clicking' : ''}`}
-        style={{
-          left: `${position.x}px`,
-          top: `${position.y}px`,
-          width: `${size}px`,
-          height: `${size}px`,
-          backgroundColor: color
-        }}
-      />
-      
-      {/* Ring cursor */}
-      <div
-        className={`cursor-ring ${isClicking ? 'clicking' : ''} ${isPointer ? 'pointer' : ''}`}
-        style={{
-          left: `${position.x - (isPointer ? ringSize * 0.75 : ringSize / 2)}px`,
-          top: `${position.y - (isPointer ? ringSize * 0.75 : ringSize / 2)}px`,
-          width: `${isPointer ? ringSize * 1.5 : ringSize}px`,
-          height: `${isPointer ? ringSize * 1.5 : ringSize}px`,
-          border: `2px solid ${color}`
-        }}
-      />
-    </>
-  );
+  // Disable custom cursor rendering
+  return null;
 }

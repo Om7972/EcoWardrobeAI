@@ -838,7 +838,7 @@ function Progress({ value, className }: { value: number; className?: string }) {
   return (
     <div className={`w-full h-2 bg-muted rounded-full overflow-hidden ${className}`}>
       <div 
-        className="h-full bg-primary rounded-full" 
+        className="h-full bg-primary rounded-full progress-bar-width"
         style={{ width: `${value}%` }}
       ></div>
     </div>

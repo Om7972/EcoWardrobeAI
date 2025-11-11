@@ -136,12 +136,57 @@ export const updateProfile: RequestHandler = async (req, res) => {
       return res.status(401).json({ error: "Unauthorized" });
     }
 
-    const { name, profile } = req.body;
+    const { 
+      name, 
+      email, 
+      bio, 
+      avatar, 
+      phone, 
+      location,
+      preferences,
+      notifications 
+    } = req.body;
+
+    const updateData: any = {};
+    
+    if (name) updateData.name = name;
+    if (email) updateData.email = email;
+    
+    // Update profile fields
+    if (bio !== undefined || avatar !== undefined || phone !== undefined || location !== undefined) {
+      updateData.profile = {};
+      const user = await User.findOne({ userId: req.user.userId });
+      if (user && user.profile) {
+        updateData.profile = { ...user.profile };
+      }
+      if (bio !== undefined) updateData.profile.bio = bio;
+      if (avatar !== undefined) updateData.profile.avatar = avatar;
+      if (phone !== undefined) updateData.profile.phone = phone;
+      if (location !== undefined) updateData.profile.location = location;
+    }
+    
+    // Update preferences
+    if (preferences) {
+      if (!updateData.profile) {
+        const user = await User.findOne({ userId: req.user.userId });
+        updateData.profile = user?.profile || {};
+      }
+      updateData.profile.preferences = preferences;
+    }
+    
+    // Update notifications
+    if (notifications) {
+      if (!updateData.profile) {
+        const user = await User.findOne({ userId: req.user.userId });
+        updateData.profile = user?.profile || {};
+      }
+      updateData.profile.notifications = notifications;
+    }
 
     const user = await User.findOneAndUpdate(
       { userId: req.user.userId },
-      { name, profile },
-      { new: true }
+      updateData,
+      { new: true, runValidators: true }
     );
 
     if (!user) {
@@ -150,10 +195,17 @@ export const updateProfile: RequestHandler = async (req, res) => {
 
     res.json({
       success: true,
-      data: {
+      message: "Profile updated successfully",
+      user: {
         userId: user.userId,
         email: user.email,
         name: user.name,
+        bio: user.profile?.bio,
+        avatar: user.profile?.avatar,
+        phone: user.profile?.phone,
+        location: user.profile?.location,
+        preferences: user.profile?.preferences,
+        notifications: user.profile?.notifications,
         profile: user.profile,
         sustainability: user.sustainability,
       },

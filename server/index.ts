@@ -17,6 +17,7 @@ import * as capsuleRoutes from "./routes/capsule";
 import * as fabricAnalysisRoutes from "./routes/fabricAnalysis";
 import * as styleCircleRoutes from "./routes/styleCircle";
 import * as authRoutes from "./routes/auth";
+import * as aiRoutes from "./routes/ai";
 import { authenticateToken } from "./middleware/auth";
 
 let dbConnected = false;
@@ -214,6 +215,13 @@ export async function createServer(): Promise<Express> {
   app.post("/api/style-circles/:circleId/posts", styleCircleRoutes.createCirclePost);
   app.get("/api/style-circles/:circleId/posts", styleCircleRoutes.getCirclePosts);
   app.put("/api/style-circles/:circleId/posts/:postId/like", styleCircleRoutes.likeCirclePost);
+
+  // AI Service routes
+  app.post("/api/ai/chat", aiRoutes.chatWithAI);
+  app.post("/api/ai/outfit-suggestion", aiRoutes.getOutfitSuggestion);
+  app.post("/api/ai/style-advice", aiRoutes.getStyleAdvice);
+  app.post("/api/ai/fabric-analysis", aiRoutes.analyzeFabricComposition);
+  app.post("/api/ai/sustainability-tips", aiRoutes.getSustainabilityTips);
 
   return app;
 }

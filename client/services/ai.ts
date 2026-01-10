@@ -1,6 +1,6 @@
-import axios from "axios";
+import apiClient from "@/lib/axios";
 
-const API_BASE_URL = "/api/ai";
+const API_BASE_URL = "/ai";
 
 export interface AIMessage {
   role: "system" | "user" | "assistant";
@@ -10,7 +10,7 @@ export interface AIMessage {
 export const aiService = {
   async chat(messages: AIMessage[]): Promise<string> {
     try {
-      const response = await axios.post(`${API_BASE_URL}/chat`, { messages });
+      const response = await apiClient.post(`${API_BASE_URL}/chat`, { messages });
       return response.data.response;
     } catch (error: any) {
       console.error("AI Chat Error:", error);
@@ -25,7 +25,7 @@ export const aiService = {
     items: string[]
   ): Promise<string> {
     try {
-      const response = await axios.post(`${API_BASE_URL}/outfit-suggestion`, {
+      const response = await apiClient.post(`${API_BASE_URL}/outfit-suggestion`, {
         occasion,
         weather,
         style,
@@ -40,7 +40,7 @@ export const aiService = {
 
   async getStyleAdvice(query: string, context?: string): Promise<string> {
     try {
-      const response = await axios.post(`${API_BASE_URL}/style-advice`, {
+      const response = await apiClient.post(`${API_BASE_URL}/style-advice`, {
         query,
         context,
       });
@@ -53,7 +53,7 @@ export const aiService = {
 
   async analyzeFabric(fabricDescription: string, imageData?: string): Promise<string> {
     try {
-      const response = await axios.post(`${API_BASE_URL}/fabric-analysis`, {
+      const response = await apiClient.post(`${API_BASE_URL}/fabric-analysis`, {
         fabricDescription,
         imageData,
       });
@@ -66,7 +66,7 @@ export const aiService = {
 
   async getSustainabilityTips(userProfile: any): Promise<string> {
     try {
-      const response = await axios.post(`${API_BASE_URL}/sustainability-tips`, {
+      const response = await apiClient.post(`${API_BASE_URL}/sustainability-tips`, {
         userProfile,
       });
       return response.data.tips;

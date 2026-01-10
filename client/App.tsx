@@ -31,6 +31,9 @@ import SwapEvents from "./pages/SwapEvents";
 import FabricCare from "./pages/FabricCare";
 import SustainabilityFeed from "./pages/SustainabilityFeed";
 import Profile from "./pages/Profile";
+import PrivacyPolicy from "./pages/PrivacyPolicy";
+import TermsOfService from "./pages/TermsOfService";
+import ContactUs from "./pages/ContactUs";
 
 const queryClient = new QueryClient();
 
@@ -160,6 +163,9 @@ export default function App() {
                 <Profile />
               </ProtectedRoute>
             } />
+            <Route path="/privacy" element={<PrivacyPolicy />} />
+            <Route path="/terms" element={<TermsOfService />} />
+            <Route path="/contact" element={<ContactUs />} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
           </Routes>

@@ -43,15 +43,28 @@ export function EcoMaintenanceWidget() {
         fetch("/api/features/weather-forecast"),
       ]);
 
+      if (!reportRes.ok) {
+        throw new Error(`Maintenance report failed: ${reportRes.status}`);
+      }
+      if (!forecastRes.ok) {
+        throw new Error(`Weather forecast failed: ${forecastRes.status}`);
+      }
+
       const reportData = await reportRes.json();
       const forecastData = await forecastRes.json();
 
       setReport({
         ...reportData.data,
-        weatherForecast: forecastData.data || reportData.data.weatherForecast,
+        weatherForecast: forecastData.data || reportData.data?.weatherForecast || [],
       });
     } catch (error) {
       console.error("Failed to fetch maintenance report:", error);
+      // Set a fallback report to prevent UI crash
+      setReport({
+        weatherForecast: [],
+        maintenanceTasks: [],
+        summary: "Unable to load maintenance data. Please try again later.",
+      });
     } finally {
       setLoading(false);
     }

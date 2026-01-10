@@ -107,6 +107,9 @@ const tagOptions = [
   "streetwear", "capsule", "eco-friendly", "secondhand"
 ];
 
+const ALL_CATEGORIES = "all";
+const ALL_TAGS = "all";
+
 export default function StyleCircles() {
   const { user } = useAuth();
   
@@ -143,8 +146,8 @@ export default function StyleCircles() {
   });
   
   const [filter, setFilter] = useState({
-    category: "",
-    tag: "",
+    category: ALL_CATEGORIES,
+    tag: ALL_TAGS,
     search: ""
   });
 
@@ -190,11 +193,11 @@ export default function StyleCircles() {
   const applyFilters = () => {
     let result = [...styleCircles];
     
-    if (filter.category) {
+    if (filter.category !== ALL_CATEGORIES) {
       result = result.filter(circle => circle.category === filter.category);
     }
     
-    if (filter.tag) {
+    if (filter.tag !== ALL_TAGS) {
       result = result.filter(circle => circle.tags.includes(filter.tag));
     }
     
@@ -467,7 +470,7 @@ export default function StyleCircles() {
                   </Label>
                   <div className="col-span-3">
                     <Select 
-                      value={circleForm.category} 
+                      value={circleForm.category || undefined} 
                       onValueChange={(value) => setCircleForm({...circleForm, category: value})}
                     >
                       <SelectTrigger>
@@ -571,7 +574,7 @@ export default function StyleCircles() {
                   <SelectValue placeholder="Filter by category" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">All Categories</SelectItem>
+                  <SelectItem value={ALL_CATEGORIES}>All Categories</SelectItem>
                   {categoryOptions.map((category) => (
                     <SelectItem key={category} value={category}>
                       {category}
@@ -588,7 +591,7 @@ export default function StyleCircles() {
                   <SelectValue placeholder="Filter by tag" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">All Tags</SelectItem>
+                  <SelectItem value={ALL_TAGS}>All Tags</SelectItem>
                   {tagOptions.map((tag) => (
                     <SelectItem key={tag} value={tag}>
                       {tag}

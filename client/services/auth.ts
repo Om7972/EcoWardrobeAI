@@ -1,6 +1,6 @@
-import axios from 'axios';
+import apiClient from '../lib/axios';
 
-const API_URL = 'http://localhost:8080/api';
+const API_URL = '/api';
 
 // User interfaces
 export interface User {
@@ -20,56 +20,78 @@ export const register = async (
   name: string,
   email: string,
   password: string,
-  stylePreferences: string[]
+  stylePreferences: string[] = []
 ): Promise<AuthResponse> => {
   try {
-    // For demo purposes, simulate successful registration
-    // In production, this would be a real API call
-    const mockResponse = {
-      user: {
-        id: `user-${Date.now()}`,
-        name,
-        email,
-      },
-      token: `token-${Date.now()}`
-    };
+    const response = await apiClient.post('/auth/signup', {
+      name,
+      email,
+      password,
+      stylePreferences
+    });
     
-    // Store user data
-    localStorage.setItem('user', JSON.stringify(mockResponse));
+    if (response.data.success && response.data.data) {
+      const { userId, email: userEmail, name: userName, token } = response.data.data;
+      
+      // Store auth data
+      localStorage.setItem('token', token);
+      localStorage.setItem('userId', userId);
+      localStorage.setItem('userName', userName);
+      localStorage.setItem('userData', JSON.stringify({ userId, email: userEmail, name: userName }));
+      
+      return {
+        user: {
+          id: userId,
+          name: userName,
+          email: userEmail,
+        },
+        token
+      };
+    }
     
-    return mockResponse;
+    throw new Error('Invalid response from server');
   } catch (error: any) {
-    throw new Error(error.response?.data?.message || 'Registration failed');
+    throw new Error(error.response?.data?.error || error.message || 'Registration failed');
   }
 };
 
 // Login user
 export const login = async (email: string, password: string): Promise<AuthResponse> => {
   try {
-    // For demo purposes, simulate successful login
-    // In production, this would be a real API call
-    const mockResponse = {
-      user: {
-        id: `user-${Date.now()}`,
-        name: email.split('@')[0],
-        email,
-      },
-      token: `token-${Date.now()}`
-    };
+    const response = await apiClient.post('/auth/signin', {
+      email,
+      password
+    });
     
-    // Store user data
-    localStorage.setItem('user', JSON.stringify(mockResponse));
+    if (response.data.success && response.data.data) {
+      const { userId, email: userEmail, name: userName, token } = response.data.data;
+      
+      // Store auth data
+      localStorage.setItem('token', token);
+      localStorage.setItem('userId', userId);
+      localStorage.setItem('userName', userName);
+      localStorage.setItem('userData', JSON.stringify({ userId, email: userEmail, name: userName }));
+      
+      return {
+        user: {
+          id: userId,
+          name: userName,
+          email: userEmail,
+        },
+        token
+      };
+    }
     
-    return mockResponse;
+    throw new Error('Invalid response from server');
   } catch (error: any) {
-    throw new Error(error.response?.data?.message || 'Login failed');
+    throw new Error(error.response?.data?.error || error.message || 'Login failed');
   }
 };
 
 // Social login
 export const socialLogin = async (provider: string, token: string): Promise<AuthResponse> => {
   try {
-    const response = await axios.post(`${API_URL}/auth/${provider}`, { token });
+    const response = await apiClient.post(`/auth/${provider}`, { token });
     
     if (response.data.token) {
       localStorage.setItem('user', JSON.stringify(response.data));
@@ -111,12 +133,12 @@ export const isAuthenticated = (): boolean => {
   return !!getToken();
 };
 
-// Set auth header for axios
+// Set auth header for axios (legacy support)
 export const setAuthHeader = (token: string): void => {
-  axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+  localStorage.setItem('token', token);
 };
 
-// Clear auth header
+// Clear auth header (legacy support)
 export const clearAuthHeader = (): void => {
-  delete axios.defaults.headers.common['Authorization'];
+  localStorage.removeItem('token');
 };

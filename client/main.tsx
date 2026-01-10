@@ -1,4 +1,6 @@
 import "./global.css";
+// Initialize axios client early to set up interceptors
+import "./lib/axios";
 import { createRoot } from "react-dom/client";
 import App from "./App";
 

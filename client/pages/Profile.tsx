@@ -22,7 +22,7 @@ import { Switch } from "@/components/ui/switch";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
-import axios from "axios";
+import apiClient from "@/lib/axios";
 
 export default function Profile() {
   const { user, updateUser } = useAuth();
@@ -57,26 +57,77 @@ export default function Profile() {
     marketplaceAlerts: false
   });
 
+  const [profileLoaded, setProfileLoaded] = useState(false);
+
   useEffect(() => {
-    if (user) {
-      setProfileData({
-        name: user.name || "",
-        email: user.email || "",
-        bio: user.bio || "",
-        avatar: user.avatar || "",
-        phone: user.phone || "",
-        location: user.location || ""
-      });
-      setAvatarPreview(user.avatar || "");
+    // Only load profile once on mount, not every time user changes
+    if (user && !profileLoaded) {
+      const loadProfile = async () => {
+        // Set initial data from user context
+        setProfileData({
+          name: user.name || "",
+          email: user.email || "",
+          bio: user.bio || "",
+          avatar: user.avatar || "",
+          phone: user.phone || "",
+          location: user.location || ""
+        });
+        setAvatarPreview(user.avatar || "");
+        
+        if (user.preferences) {
+          setPreferences(user.preferences);
+        }
+        if (user.notifications) {
+          setNotifications(user.notifications);
+        }
+
+        // Fetch full profile from backend if token exists
+        const token = localStorage.getItem('token');
+        if (token) {
+          try {
+            const response = await apiClient.get('/protected/profile');
+            if (response.data.success && response.data.data) {
+              const profileData = response.data.data;
+              setProfileData({
+                name: profileData.name || user.name || "",
+                email: profileData.email || user.email || "",
+                bio: profileData.profile?.bio || user.bio || "",
+                avatar: profileData.profile?.avatar || user.avatar || "",
+                phone: profileData.profile?.phone || user.phone || "",
+                location: profileData.profile?.location || user.location || ""
+              });
+              setAvatarPreview(profileData.profile?.avatar || user.avatar || "");
+              
+              if (profileData.profile?.preferences) {
+                setPreferences(profileData.profile.preferences);
+              }
+              if (profileData.profile?.notifications) {
+                setNotifications(profileData.profile.notifications);
+              }
+              
+              // Update user in context
+              updateUser({
+                ...user,
+                ...profileData,
+                bio: profileData.profile?.bio,
+                avatar: profileData.profile?.avatar,
+                phone: profileData.profile?.phone,
+                location: profileData.profile?.location,
+                preferences: profileData.profile?.preferences,
+                notifications: profileData.profile?.notifications,
+              });
+            }
+          } catch (error: any) {
+            console.error('Failed to load profile:', error);
+            // Continue with local user data if API fails
+          }
+        }
+        setProfileLoaded(true);
+      };
       
-      if (user.preferences) {
-        setPreferences(user.preferences);
-      }
-      if (user.notifications) {
-        setNotifications(user.notifications);
-      }
+      loadProfile();
     }
-  }, [user]);
+  }, [user, profileLoaded, updateUser]);
 
   const handleAvatarChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -99,7 +150,7 @@ export default function Profile() {
   const handleSaveProfile = async () => {
     setLoading(true);
     try {
-      const response = await axios.put("/api/protected/profile", {
+      const response = await apiClient.put("/protected/profile", {
         ...profileData,
         preferences,
         notifications

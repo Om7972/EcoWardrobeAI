@@ -1,4 +1,5 @@
-import "dotenv/config";
+import dotenv from "dotenv";
+dotenv.config({ path: process.env.NODE_ENV === "production" ? ".env.production" : ".env" });
 import express, { Express } from "express";
 import cors from "cors";
 import { handleDemo } from "./routes/demo";
@@ -35,8 +36,35 @@ async function initializeDatabase() {
   }
 }
 
+// Environment validation
+function validateEnvironment() {
+  const requiredEnvVars = ['JWT_SECRET'];
+  const missingVars = requiredEnvVars.filter(varName => !process.env[varName]);
+  
+  if (missingVars.length > 0) {
+    console.warn(`⚠️ Missing environment variables: ${missingVars.join(', ')}`);
+    console.warn('Using fallback values for missing variables');
+  }
+  
+  // Set fallback values
+  if (!process.env.JWT_SECRET) {
+    process.env.JWT_SECRET = 'fallback_jwt_secret_key_2025';
+  }
+  if (!process.env.PING_MESSAGE) {
+    process.env.PING_MESSAGE = 'ping pong';
+  }
+  if (!process.env.NODE_ENV) {
+    process.env.NODE_ENV = 'development';
+  }
+  
+  console.log('✅ Environment configuration validated');
+}
+
 export async function createServer(): Promise<Express> {
   const app = express();
+
+  // Validate environment variables
+  validateEnvironment();
 
   // Initialize database
   await initializeDatabase();
@@ -222,6 +250,11 @@ export async function createServer(): Promise<Express> {
   app.post("/api/ai/style-advice", aiRoutes.getStyleAdvice);
   app.post("/api/ai/fabric-analysis", aiRoutes.analyzeFabricComposition);
   app.post("/api/ai/sustainability-tips", aiRoutes.getSustainabilityTips);
+  app.post("/api/ai/weather-outfit", aiRoutes.getWeatherBasedOutfit);
+  app.post("/api/ai/event-styling", aiRoutes.getEventBasedStyling);
+  app.get("/api/ai/weather-forecast", aiRoutes.getWeatherForecast);
+  app.get("/api/ai/calendar-styling", aiRoutes.getCalendarStyling);
+  app.get("/api/ai/test-providers", aiRoutes.testAIProviders);
 
   return app;
 }

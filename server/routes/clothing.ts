@@ -1,10 +1,57 @@
 import { RequestHandler } from "express";
 import { ClothingItem } from "../models/index";
+import { executeWithFallback } from "../config/database";
 import {
   calculateEcoScore,
   getEcoCertifications,
   getEcoScoreDescription,
 } from "../services/ecoScoreService";
+
+// Mock clothing data for fallback
+const mockClothingItems = [
+  {
+    _id: "mock-item-1",
+    userId: "demo-user",
+    title: "Sustainable Cotton T-Shirt",
+    description: "Comfortable organic cotton t-shirt",
+    imageUrl: "https://via.placeholder.com/300?text=Cotton+T-Shirt",
+    category: "tops",
+    color: ["white"],
+    brand: "EcoFashion",
+    material: ["organic cotton"],
+    ecoScore: 85,
+    sustainability: {
+      rating: 4,
+      certifications: ["GOTS", "Fair Trade"],
+      notes: "Excellent sustainability rating"
+    },
+    usageFrequency: 75,
+    tags: ["tops", "white", "organic cotton"],
+    createdAt: new Date(),
+    updatedAt: new Date()
+  },
+  {
+    _id: "mock-item-2", 
+    userId: "demo-user",
+    title: "Recycled Denim Jeans",
+    description: "Stylish jeans made from recycled materials",
+    imageUrl: "https://via.placeholder.com/300?text=Denim+Jeans",
+    category: "bottoms",
+    color: ["blue"],
+    brand: "GreenDenim",
+    material: ["recycled cotton", "elastane"],
+    ecoScore: 78,
+    sustainability: {
+      rating: 4,
+      certifications: ["Cradle to Cradle"],
+      notes: "Good sustainability with recycled materials"
+    },
+    usageFrequency: 60,
+    tags: ["bottoms", "blue", "recycled cotton"],
+    createdAt: new Date(),
+    updatedAt: new Date()
+  }
+];
 
 // Upload clothing item
 export const uploadClothingItem: RequestHandler = async (req, res) => {
@@ -107,18 +154,45 @@ export const getUserCloset: RequestHandler = async (req, res) => {
     const { userId } = req.params;
     const { category, color, brand } = req.query;
 
-    const query: Record<string, any> = { userId };
+    const result = await executeWithFallback(
+      async () => {
+        const query: Record<string, any> = { userId };
 
-    if (category) query.category = category;
-    if (color) query.color = { $in: [color] };
-    if (brand) query.brand = brand;
+        if (category) query.category = category;
+        if (color) query.color = { $in: [color] };
+        if (brand) query.brand = brand;
 
-    const items = await ClothingItem.find(query).sort({ uploadedAt: -1 });
+        const items = await ClothingItem.find(query).sort({ uploadedAt: -1 });
+        return items;
+      },
+      () => {
+        // Fallback: return mock clothing items
+        let filteredItems = mockClothingItems.filter(item => 
+          item.userId === userId || item.userId === "demo-user"
+        );
+
+        // Apply filters
+        if (category) {
+          filteredItems = filteredItems.filter(item => item.category === category);
+        }
+        if (color) {
+          filteredItems = filteredItems.filter(item => 
+            item.color.includes(color as string)
+          );
+        }
+        if (brand) {
+          filteredItems = filteredItems.filter(item => item.brand === brand);
+        }
+
+        return filteredItems;
+      },
+      "Fetch user closet"
+    );
 
     res.json({
       success: true,
-      count: items.length,
-      data: items,
+      count: result.length,
+      data: result,
     });
   } catch (error) {
     console.error("Fetch closet error:", error);

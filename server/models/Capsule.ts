@@ -47,7 +47,14 @@ const capsuleSchema = new mongoose.Schema<ICapsule>(
   { timestamps: true }
 );
 
-const CapsuleModel = mongoose.model<ICapsule>("Capsule", capsuleSchema);
+// Use singleton pattern to prevent re-compilation during hot reload
+let CapsuleModel: mongoose.Model<ICapsule>;
+
+try {
+  CapsuleModel = mongoose.model<ICapsule>("Capsule");
+} catch {
+  CapsuleModel = mongoose.model<ICapsule>("Capsule", capsuleSchema);
+}
 
 export { CapsuleModel as Capsule };
 export type { ICapsule, ICapsuleItem };

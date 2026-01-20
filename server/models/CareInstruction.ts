@@ -23,7 +23,14 @@ const careInstructionSchema = new mongoose.Schema<ICareInstruction>(
   { timestamps: true }
 );
 
-const CareInstructionModel = mongoose.model<ICareInstruction>("CareInstruction", careInstructionSchema);
+// Use singleton pattern to prevent re-compilation during hot reload
+let CareInstructionModel: mongoose.Model<ICareInstruction>;
+
+try {
+  CareInstructionModel = mongoose.model<ICareInstruction>("CareInstruction");
+} catch {
+  CareInstructionModel = mongoose.model<ICareInstruction>("CareInstruction", careInstructionSchema);
+}
 
 export { CareInstructionModel as CareInstruction };
 export type { ICareInstruction };

@@ -31,7 +31,14 @@ const repairLogSchema = new mongoose.Schema<IRepairLog>(
   { timestamps: true }
 );
 
-const RepairLogModel = mongoose.model<IRepairLog>("RepairLog", repairLogSchema);
+// Use singleton pattern to prevent re-compilation during hot reload
+let RepairLogModel: mongoose.Model<IRepairLog>;
+
+try {
+  RepairLogModel = mongoose.model<IRepairLog>("RepairLog");
+} catch {
+  RepairLogModel = mongoose.model<IRepairLog>("RepairLog", repairLogSchema);
+}
 
 export { RepairLogModel as RepairLog };
 export type { IRepairLog };

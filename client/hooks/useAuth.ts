@@ -28,6 +28,8 @@ export function useAuth() {
     const userName = localStorage.getItem("userName");
     const userDataStr = localStorage.getItem("userData");
 
+    console.log('Checking auth status:', { token: !!token, userId: !!userId, userName: !!userName });
+
     if (token && userId && userName) {
       let userData: User = { userId, email: "", name: userName };
       
@@ -41,7 +43,10 @@ export function useAuth() {
         }
       }
       
+      console.log('User authenticated:', userData);
       setUser(userData);
+    } else {
+      console.log('No valid auth data found in localStorage');
     }
     setLoading(false);
   };

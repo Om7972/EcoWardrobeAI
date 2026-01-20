@@ -27,7 +27,14 @@ const swapRequestSchema = new mongoose.Schema<ISwapRequest>(
   { timestamps: true }
 );
 
-const SwapRequestModel = mongoose.model<ISwapRequest>("SwapRequest", swapRequestSchema);
+// Use singleton pattern to prevent re-compilation during hot reload
+let SwapRequestModel: mongoose.Model<ISwapRequest>;
+
+try {
+  SwapRequestModel = mongoose.model<ISwapRequest>("SwapRequest");
+} catch {
+  SwapRequestModel = mongoose.model<ISwapRequest>("SwapRequest", swapRequestSchema);
+}
 
 export { SwapRequestModel as SwapRequest };
 export type { ISwapRequest };

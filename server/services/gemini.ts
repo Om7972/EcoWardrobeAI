@@ -1,11 +1,15 @@
 import axios from "axios";
 
+// Ensure dotenv is loaded
+import dotenv from "dotenv";
+dotenv.config();
+
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
 // Use v1 API with gemini-1.5-flash (stable and widely available)
 // Fallback to gemini-pro if 1.5-flash doesn't work
 const GEMINI_BASE_URL = "https://generativelanguage.googleapis.com/v1";
-const GEMINI_MODEL = process.env.GEMINI_MODEL || "models/gemini-1.5-flash";
-const GEMINI_API_URL = `${GEMINI_BASE_URL}/${GEMINI_MODEL}:generateContent`;
+const GEMINI_MODEL = process.env.GEMINI_MODEL || "gemini-1.5-flash";
+const GEMINI_API_URL = `${GEMINI_BASE_URL}/models/${GEMINI_MODEL}:generateContent`;
 const IS_GEMINI_CONFIGURED = Boolean(GEMINI_API_KEY);
 
 export interface GeminiMessage {
@@ -71,11 +75,18 @@ export async function generateGeminiResponse(
   } catch (error: any) {
     console.error("Gemini API Error:", error.response?.data || error.message);
     
-    // If model not found, try fallback to gemini-pro
-    if (error.response?.status === 404 && GEMINI_MODEL !== "models/gemini-pro") {
-      console.warn("Model not found, trying gemini-pro as fallback");
+    // If model not found, try fallback to gemini-1.5-pro
+    if (error.response?.status === 404 && GEMINI_MODEL !== "gemini-1.5-pro") {
+      console.warn("Model not found, trying gemini-1.5-pro as fallback");
       try {
-        const fallbackUrl = `${GEMINI_BASE_URL}/models/gemini-pro:generateContent?key=${GEMINI_API_KEY}`;
+        const contents = conversationHistory || [
+          {
+            role: "user",
+            parts: [{ text: prompt }]
+          }
+        ];
+        
+        const fallbackUrl = `${GEMINI_BASE_URL}/models/gemini-1.5-pro:generateContent?key=${GEMINI_API_KEY}`;
         const fallbackResponse = await axios.post(
           fallbackUrl,
           {
@@ -367,11 +378,25 @@ export async function chatWithGemini(
   } catch (error: any) {
     console.error("Gemini API Error:", error.response?.data || error.message);
     
-    // If model not found, try fallback to gemini-pro
-    if (error.response?.status === 404 && GEMINI_MODEL !== "models/gemini-pro") {
-      console.warn("Model not found, trying gemini-pro as fallback");
+    // If model not found, try fallback to gemini-1.5-pro
+    if (error.response?.status === 404 && GEMINI_MODEL !== "gemini-1.5-pro") {
+      console.warn("Model not found, trying gemini-1.5-pro as fallback");
       try {
-        const fallbackUrl = `${GEMINI_BASE_URL}/models/gemini-pro:generateContent?key=${GEMINI_API_KEY}`;
+        // Convert messages to Gemini format for fallback
+        const geminiMessages: GeminiMessage[] = messages
+          .filter(msg => msg.role !== "system")
+          .map(msg => ({
+            role: msg.role === "user" ? "user" : "model",
+            parts: [{ text: msg.content }]
+          }));
+
+        // Add system message as first user message if exists
+        const systemMessage = messages.find(msg => msg.role === "system");
+        if (systemMessage && geminiMessages.length > 0) {
+          geminiMessages[0].parts[0].text = `${systemMessage.content}\n\n${geminiMessages[0].parts[0].text}`;
+        }
+
+        const fallbackUrl = `${GEMINI_BASE_URL}/models/gemini-1.5-pro:generateContent?key=${GEMINI_API_KEY}`;
         const fallbackResponse = await axios.post(
           fallbackUrl,
           {

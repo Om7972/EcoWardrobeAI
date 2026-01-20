@@ -57,7 +57,14 @@ const marketplaceListingSchema = new mongoose.Schema<IMarketplaceListing>(
   { timestamps: true }
 );
 
-const MarketplaceListingModel = mongoose.model<IMarketplaceListing>("MarketplaceListing", marketplaceListingSchema);
+// Use singleton pattern to prevent re-compilation during hot reload
+let MarketplaceListingModel: mongoose.Model<IMarketplaceListing>;
+
+try {
+  MarketplaceListingModel = mongoose.model<IMarketplaceListing>("MarketplaceListing");
+} catch {
+  MarketplaceListingModel = mongoose.model<IMarketplaceListing>("MarketplaceListing", marketplaceListingSchema);
+}
 
 export { MarketplaceListingModel as MarketplaceListing };
 export type { IMarketplaceListing };

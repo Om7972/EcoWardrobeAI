@@ -74,7 +74,14 @@ styleCircleSchema.index({ tags: 1 });
 styleCircleSchema.index({ memberCount: -1 });
 styleCircleSchema.index({ postCount: -1 });
 
-const StyleCircleModel = mongoose.model<IStyleCircle>("StyleCircle", styleCircleSchema);
+// Use singleton pattern to prevent re-compilation during hot reload
+let StyleCircleModel: mongoose.Model<IStyleCircle>;
+
+try {
+  StyleCircleModel = mongoose.model<IStyleCircle>("StyleCircle");
+} catch {
+  StyleCircleModel = mongoose.model<IStyleCircle>("StyleCircle", styleCircleSchema);
+}
 
 export { StyleCircleModel as StyleCircle };
 export type { IStyleCircle, IStyleCircleMember, IStyleCirclePost };

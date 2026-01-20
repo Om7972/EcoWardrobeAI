@@ -1,7 +1,46 @@
 import { RequestHandler } from "express";
 import { Outfit, ClothingItem } from "../models/index";
+import { executeWithFallback } from "../config/database";
 import { generateOutfitWithAI } from "../services/aiService";
 import { getWeather, getWeatherBasedRecommendations, getMockWeather } from "../services/weatherService";
+
+// Mock outfit data for fallback
+const mockOutfits = [
+  {
+    _id: "mock-outfit-1",
+    userId: "demo-user",
+    title: "Professional Work Outfit",
+    description: "A polished look perfect for business meetings and office environments",
+    items: ["mock-item-1", "mock-item-2"],
+    occasion: "work",
+    weather: "clear",
+    saved: true,
+    aiSuggestion: {
+      outfitDescription: "Professional and sustainable outfit combining organic cotton with recycled materials",
+      styleNotes: ["Perfect for business meetings", "Comfortable all-day wear", "Sustainable materials"],
+      sustainabilityTips: "Choose quality pieces that can be mixed and matched for multiple professional looks"
+    },
+    generatedAt: new Date(),
+    updatedAt: new Date()
+  },
+  {
+    _id: "mock-outfit-2",
+    userId: "demo-user", 
+    title: "Casual Weekend Look",
+    description: "Relaxed and comfortable outfit for weekend activities",
+    items: ["mock-item-1"],
+    occasion: "casual",
+    weather: "partly cloudy",
+    saved: false,
+    aiSuggestion: {
+      outfitDescription: "Comfortable casual look with sustainable materials",
+      styleNotes: ["Perfect for weekend outings", "Easy to move in", "Versatile styling"],
+      sustainabilityTips: "Mix high and low pieces, and don't be afraid to repeat favorite outfits"
+    },
+    generatedAt: new Date(),
+    updatedAt: new Date()
+  }
+];
 
 // Generate outfit with AI
 export const generateOutfit: RequestHandler = async (req, res) => {
@@ -81,19 +120,42 @@ export const getUserOutfits: RequestHandler = async (req, res) => {
     const { userId } = req.params;
     const { saved, occasion } = req.query;
 
-    const query: Record<string, any> = { userId };
+    const result = await executeWithFallback(
+      async () => {
+        const query: Record<string, any> = { userId };
 
-    if (saved === "true") query.saved = true;
-    if (occasion) query.occasion = occasion;
+        if (saved === "true") query.saved = true;
+        if (occasion) query.occasion = occasion;
 
-    const outfits = await Outfit.find(query)
-      .populate("items")
-      .sort({ generatedAt: -1 });
+        const outfits = await Outfit.find(query)
+          .populate("items")
+          .sort({ generatedAt: -1 });
+
+        return outfits;
+      },
+      () => {
+        // Fallback: return mock outfits
+        let filteredOutfits = mockOutfits.filter(outfit => 
+          outfit.userId === userId || outfit.userId === "demo-user"
+        );
+
+        // Apply filters
+        if (saved === "true") {
+          filteredOutfits = filteredOutfits.filter(outfit => outfit.saved);
+        }
+        if (occasion) {
+          filteredOutfits = filteredOutfits.filter(outfit => outfit.occasion === occasion);
+        }
+
+        return filteredOutfits;
+      },
+      "Fetch user outfits"
+    );
 
     res.json({
       success: true,
-      count: outfits.length,
-      data: outfits,
+      count: result.length,
+      data: result,
     });
   } catch (error) {
     console.error("Fetch outfits error:", error);

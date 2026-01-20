@@ -43,7 +43,14 @@ const fabricAnalysisSchema = new mongoose.Schema<IFabricAnalysis>(
   { timestamps: true }
 );
 
-const FabricAnalysisModel = mongoose.model<IFabricAnalysis>("FabricAnalysis", fabricAnalysisSchema);
+// Use singleton pattern to prevent re-compilation during hot reload
+let FabricAnalysisModel: mongoose.Model<IFabricAnalysis>;
+
+try {
+  FabricAnalysisModel = mongoose.model<IFabricAnalysis>("FabricAnalysis");
+} catch {
+  FabricAnalysisModel = mongoose.model<IFabricAnalysis>("FabricAnalysis", fabricAnalysisSchema);
+}
 
 export { FabricAnalysisModel as FabricAnalysis };
 export type { IFabricAnalysis, IFabricComponent };

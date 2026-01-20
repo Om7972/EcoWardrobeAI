@@ -63,14 +63,23 @@ export const login = async (email: string, password: string): Promise<AuthRespon
       password
     });
     
+    console.log('Sign-in response:', response.data);
+    
     if (response.data.success && response.data.data) {
       const { userId, email: userEmail, name: userName, token } = response.data.data;
+      
+      if (!token || !userId) {
+        console.error('Missing token or userId in response:', { token, userId });
+        throw new Error('Invalid server response: missing authentication data');
+      }
       
       // Store auth data
       localStorage.setItem('token', token);
       localStorage.setItem('userId', userId);
       localStorage.setItem('userName', userName);
       localStorage.setItem('userData', JSON.stringify({ userId, email: userEmail, name: userName }));
+      
+      console.log('Auth data stored successfully');
       
       return {
         user: {
@@ -82,8 +91,10 @@ export const login = async (email: string, password: string): Promise<AuthRespon
       };
     }
     
+    console.error('Invalid response format:', response.data);
     throw new Error('Invalid response from server');
   } catch (error: any) {
+    console.error('Login error:', error);
     throw new Error(error.response?.data?.error || error.message || 'Login failed');
   }
 };

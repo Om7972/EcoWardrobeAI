@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import Layout from "@/components/Layout";
 import { useAuth } from "@/hooks/useAuth";
 import { 
@@ -58,11 +58,19 @@ export default function Profile() {
   });
 
   const [profileLoaded, setProfileLoaded] = useState(false);
+  const [apiCallMade, setApiCallMade] = useState(false);
+
+  const didLoadRef = useRef(false);
 
   useEffect(() => {
-    // Only load profile once on mount, not every time user changes
-    if (user && !profileLoaded) {
+    // Ensure we load profile only once per mount/user
+    if (user && !didLoadRef.current) {
+      didLoadRef.current = true;
       const loadProfile = async () => {
+        // Mark as loaded early to avoid re-entrancy on state updates
+        setProfileLoaded(true);
+        console.log('🔄 Profile.tsx: Loading profile for user:', user.userId);
+        
         // Set initial data from user context
         setProfileData({
           name: user.name || "",
@@ -84,50 +92,68 @@ export default function Profile() {
         // Fetch full profile from backend if token exists
         const token = localStorage.getItem('token');
         if (token) {
+          setApiCallMade(true);
           try {
+            console.log('🔄 Profile.tsx: Fetching full profile from server with token');
             const response = await apiClient.get('/protected/profile');
+            console.log('✅ Profile.tsx: Profile response received:', response.status, response.data.success);
+            
             if (response.data.success && response.data.data) {
-              const profileData = response.data.data;
-              setProfileData({
-                name: profileData.name || user.name || "",
-                email: profileData.email || user.email || "",
-                bio: profileData.profile?.bio || user.bio || "",
-                avatar: profileData.profile?.avatar || user.avatar || "",
-                phone: profileData.profile?.phone || user.phone || "",
-                location: profileData.profile?.location || user.location || ""
-              });
-              setAvatarPreview(profileData.profile?.avatar || user.avatar || "");
+              const profileDataFromServer = response.data.data;
+              console.log('✅ Profile.tsx: Updating profile with server data:', profileDataFromServer.email);
               
-              if (profileData.profile?.preferences) {
-                setPreferences(profileData.profile.preferences);
+              setProfileData({
+                name: profileDataFromServer.name || user.name || "",
+                email: profileDataFromServer.email || user.email || "",
+                bio: profileDataFromServer.profile?.bio || user.bio || "",
+                avatar: profileDataFromServer.profile?.avatar || user.avatar || "",
+                phone: profileDataFromServer.profile?.phone || user.phone || "",
+                location: profileDataFromServer.profile?.location || user.location || ""
+              });
+              setAvatarPreview(profileDataFromServer.profile?.avatar || user.avatar || "");
+              
+              if (profileDataFromServer.profile?.preferences) {
+                setPreferences(profileDataFromServer.profile.preferences);
               }
-              if (profileData.profile?.notifications) {
-                setNotifications(profileData.profile.notifications);
+              if (profileDataFromServer.preferences) {
+                setPreferences(prev => ({ ...prev, ...profileDataFromServer.preferences }));
+              }
+              if (profileDataFromServer.notifications) {
+                setNotifications(profileDataFromServer.notifications);
               }
               
               // Update user in context
               updateUser({
                 ...user,
-                ...profileData,
-                bio: profileData.profile?.bio,
-                avatar: profileData.profile?.avatar,
-                phone: profileData.profile?.phone,
-                location: profileData.profile?.location,
-                preferences: profileData.profile?.preferences,
-                notifications: profileData.profile?.notifications,
+                ...profileDataFromServer,
+                bio: profileDataFromServer.profile?.bio || profileDataFromServer.bio,
+                avatar: profileDataFromServer.profile?.avatar || profileDataFromServer.avatar,
+                phone: profileDataFromServer.profile?.phone || profileDataFromServer.phone,
+                location: profileDataFromServer.profile?.location || profileDataFromServer.location,
+                preferences: profileDataFromServer.preferences,
+                notifications: profileDataFromServer.notifications,
               });
+              
+              console.log('✅ Profile.tsx: Profile updated successfully');
+              toast.success('Profile loaded successfully');
             }
           } catch (error: any) {
-            console.error('Failed to load profile:', error);
-            // Continue with local user data if API fails
+            console.error('❌ Profile.tsx: Failed to load profile from server:', error.response?.status, error.message);
+            // Continue with local user data if API fails - this is expected in fallback/demo mode
+            console.log('⚠️ Profile.tsx: Will use cached profile data from localStorage');
+            toast.info("Using fallback profile data - database may be unavailable");
           }
+        } else {
+          console.log('⚠️ Profile.tsx: No token found, using initial profile data');
+          toast.info("Complete your profile below");
         }
-        setProfileLoaded(true);
+        
+        console.log('✅ Profile.tsx: Profile loading completed');
       };
       
       loadProfile();
     }
-  }, [user, profileLoaded, updateUser]);
+  }, [user]);
 
   const handleAvatarChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -156,7 +182,25 @@ export default function Profile() {
         notifications
       });
       
-      updateUser(response.data.user);
+      const updated = response.data.user;
+      // Update context user
+      updateUser(updated);
+      // Update local state to match server response
+      setProfileData({
+        name: updated.name || "",
+        email: updated.email || "",
+        bio: updated.bio ?? updated.profile?.bio ?? "",
+        avatar: updated.avatar ?? updated.profile?.avatar ?? "",
+        phone: updated.phone ?? updated.profile?.phone ?? "",
+        location: updated.location ?? updated.profile?.location ?? "",
+      });
+      setAvatarPreview(updated.avatar ?? updated.profile?.avatar ?? "");
+      if (updated.preferences) {
+        setPreferences(updated.preferences);
+      }
+      if (updated.notifications) {
+        setNotifications(updated.notifications);
+      }
       toast.success("Profile updated successfully!");
     } catch (error: any) {
       toast.error(error.response?.data?.error || "Failed to update profile");
@@ -179,6 +223,33 @@ export default function Profile() {
     "Reduce new purchases", "Buy only secondhand", "Support ethical brands",
     "Minimize waste", "Extend garment life", "Choose natural fibers"
   ];
+
+  // Show loading state with diagnostic info
+  if (!profileLoaded) {
+    return (
+      <Layout>
+        <div className="min-h-screen bg-gradient-to-b from-background to-muted/20 flex items-center justify-center">
+          <Card className="w-full max-w-md">
+            <CardHeader>
+              <CardTitle>Loading Profile...</CardTitle>
+              <CardDescription>Initializing your profile</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="flex items-center gap-2">
+                <div className="animate-spin h-4 w-4 border-2 border-primary border-t-transparent rounded-full" />
+                <p>Loading your data...</p>
+              </div>
+              <div className="text-sm text-muted-foreground space-y-2">
+                <p>User: {user?.email}</p>
+                <p>API Call Made: {apiCallMade ? 'Yes' : 'No'}</p>
+                <p>Token Present: {localStorage.getItem('token') ? 'Yes' : 'No'}</p>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      </Layout>
+    );
+  }
 
   return (
     <Layout>

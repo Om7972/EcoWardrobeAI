@@ -47,7 +47,14 @@ const moodboardSchema = new mongoose.Schema<IMoodboard>(
   { timestamps: true }
 );
 
-const MoodboardModel = mongoose.model<IMoodboard>("Moodboard", moodboardSchema);
+// Use singleton pattern to prevent re-compilation during hot reload
+let MoodboardModel: mongoose.Model<IMoodboard>;
+
+try {
+  MoodboardModel = mongoose.model<IMoodboard>("Moodboard");
+} catch {
+  MoodboardModel = mongoose.model<IMoodboard>("Moodboard", moodboardSchema);
+}
 
 export { MoodboardModel as Moodboard };
 export type { IMoodboard, IMoodboardItem };

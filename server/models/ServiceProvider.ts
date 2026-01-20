@@ -35,7 +35,14 @@ const serviceProviderSchema = new mongoose.Schema<IServiceProvider>(
   { timestamps: true }
 );
 
-const ServiceProviderModel = mongoose.model<IServiceProvider>("ServiceProvider", serviceProviderSchema);
+// Use singleton pattern to prevent re-compilation during hot reload
+let ServiceProviderModel: mongoose.Model<IServiceProvider>;
+
+try {
+  ServiceProviderModel = mongoose.model<IServiceProvider>("ServiceProvider");
+} catch {
+  ServiceProviderModel = mongoose.model<IServiceProvider>("ServiceProvider", serviceProviderSchema);
+}
 
 export { ServiceProviderModel as ServiceProvider };
 export type { IServiceProvider };

@@ -1,7 +1,10 @@
 import { RequestHandler } from "express";
 import jwt from "jsonwebtoken";
-import { User, IUser } from "../models/User";
+import type { Model } from "mongoose";
+import { User as UserRaw, IUser } from "../models/User";
 import { executeWithFallback } from "../config/database";
+import { z } from "zod";
+const UserModel = UserRaw as unknown as Model<IUser>;
 
 // Mock user data for fallback
 const mockUser = {
@@ -32,6 +35,36 @@ const mockUser = {
   updatedAt: new Date()
 };
 
+const UpdateProfileSchema = z.object({
+  name: z.string().min(1).max(100).optional(),
+  email: z.string().email().max(254).optional(),
+  bio: z.string().max(500).optional(),
+  avatar: z.string().max(500000).optional(),
+  phone: z.string().max(30).optional(),
+  location: z.string().max(120).optional(),
+  preferences: z
+    .object({
+      topSize: z.string().max(10).optional(),
+      bottomSize: z.string().max(10).optional(),
+      shoeSize: z.string().max(10).optional(),
+      preferredMaterials: z.array(z.string()).max(50).optional(),
+      avoidMaterials: z.array(z.string()).max(50).optional(),
+      favoriteColors: z.array(z.string()).max(50).optional(),
+      stylePreferences: z.array(z.string()).max(50).optional(),
+      sustainabilityGoals: z.array(z.string()).max(50).optional(),
+    })
+    .optional(),
+  notifications: z
+    .object({
+      emailNotifications: z.boolean().optional(),
+      outfitSuggestions: z.boolean().optional(),
+      communityUpdates: z.boolean().optional(),
+      sustainabilityTips: z.boolean().optional(),
+      marketplaceAlerts: z.boolean().optional(),
+    })
+    .optional(),
+}).strict();
+
 // Sign up
 export const signUp: RequestHandler = async (req, res) => {
   try {
@@ -40,13 +73,13 @@ export const signUp: RequestHandler = async (req, res) => {
     const result = await executeWithFallback(
       async () => {
         // Check if user already exists
-        const existingUser = await User.findOne({ email });
+        const existingUser = await UserModel.findOne({ email });
         if (existingUser) {
           throw new Error("User with this email already exists");
         }
 
         // Create new user
-        const user = new User({
+        const user = new UserModel({
           userId: `user-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`,
           email,
           name,
@@ -67,25 +100,7 @@ export const signUp: RequestHandler = async (req, res) => {
         await user.save();
         return user;
       },
-      () => {
-        // Fallback: create mock user for demo mode
-        return {
-          userId: `demo-user-${Date.now()}`,
-          email,
-          name,
-          profile: {
-            stylePreferences: stylePreferences || [],
-            favoriteColors: [],
-          },
-          sustainability: {
-            totalWaterSaved: 0,
-            totalCO2Reduced: 0,
-            totalGarmentsDonated: 0,
-            cardsEarned: 0,
-            points: 0,
-          },
-        };
-      },
+      () => { throw new Error("Database unavailable"); },
       "Create user account"
     );
 
@@ -127,7 +142,7 @@ export const signIn: RequestHandler = async (req, res) => {
     const result = await executeWithFallback(
       async () => {
         // Find user by email
-        const user = await User.findOne({ email });
+        const user = await UserModel.findOne({ email });
         if (!user) {
           throw new Error("Invalid email or password");
         }
@@ -138,27 +153,14 @@ export const signIn: RequestHandler = async (req, res) => {
         }
 
         // Compare password
-        const isPasswordValid = await user.comparePassword(password);
+        const isPasswordValid = await (user as any).comparePassword(password);
         if (!isPasswordValid) {
           throw new Error("Invalid email or password");
         }
 
         return user;
       },
-      () => {
-        // Fallback: demo mode authentication
-        // Allow any email/password combination for demo
-        console.log("⚠️ Using fallback for User authentication");
-        
-        // Return mock user for demo mode
-        return {
-          userId: `demo-user-${email.replace(/[@.]/g, '-')}`,
-          email,
-          name: email.split('@')[0] || "Demo User",
-          profile: mockUser.profile,
-          sustainability: mockUser.sustainability,
-        };
-      },
+      () => { throw new Error("Database unavailable"); },
       "User authentication"
     );
 
@@ -203,54 +205,14 @@ export const getProfile: RequestHandler = async (req, res) => {
     const result = await executeWithFallback(
       async () => {
         console.log("Attempting to fetch user from database");
-        const user = await User.findOne({ userId: req.user!.userId });
+        const user = await UserModel.findOne({ userId: req.user!.userId });
         if (!user) {
           throw new Error("User not found in database");
         }
         console.log("User found in database:", user.email);
         return user;
       },
-      () => {
-        // Fallback: return mock user with data from JWT token
-        console.log("✅ Using fallback profile data for userId:", req.user!.userId);
-        return {
-          userId: req.user!.userId,
-          email: req.user!.email,
-          name: req.user!.name,
-          profile: {
-            bio: "Welcome to EcoWardrobe AI! Complete your profile to get personalized recommendations.",
-            avatar: "",
-            phone: "",
-            location: "",
-            stylePreferences: [],
-            favoriteColors: [],
-          },
-          sustainability: {
-            totalWaterSaved: 0,
-            totalCO2Reduced: 0,
-            totalGarmentsDonated: 0,
-            cardsEarned: 0,
-            points: 0,
-          },
-          preferences: {
-            topSize: "",
-            bottomSize: "",
-            shoeSize: "",
-            preferredMaterials: [],
-            avoidMaterials: [],
-            favoriteColors: [],
-            stylePreferences: [],
-            sustainabilityGoals: [],
-          },
-          notifications: {
-            emailNotifications: true,
-            outfitSuggestions: true,
-            communityUpdates: true,
-            sustainabilityTips: true,
-            marketplaceAlerts: false,
-          },
-        };
-      },
+      () => { throw new Error("Database unavailable"); },
       "Fetch user profile"
     );
 
@@ -289,6 +251,10 @@ export const updateProfile: RequestHandler = async (req, res) => {
       return res.status(401).json({ error: "Unauthorized" });
     }
 
+    const parsed = UpdateProfileSchema.safeParse(req.body);
+    if (!parsed.success) {
+      return res.status(400).json({ error: "Invalid input", details: parsed.error.flatten() });
+    }
     const { 
       name, 
       email, 
@@ -298,7 +264,7 @@ export const updateProfile: RequestHandler = async (req, res) => {
       location,
       preferences,
       notifications 
-    } = req.body;
+    } = parsed.data;
 
     const result = await executeWithFallback(
       async () => {
@@ -308,10 +274,18 @@ export const updateProfile: RequestHandler = async (req, res) => {
         updateData.name = name ?? req.user!.name;
         updateData.email = email ?? req.user!.email;
         
+        // Prevent email collisions
+        if (email && email !== req.user!.email) {
+          const existing = await UserModel.findOne({ email });
+          if (existing && existing.userId !== req.user!.userId) {
+            throw new Error("EMAIL_ALREADY_IN_USE");
+          }
+        }
+
         // Update profile fields (bio, avatar live under profile)
         if (bio !== undefined || avatar !== undefined) {
           updateData.profile = {};
-          const user = await User.findOne({ userId: req.user!.userId });
+          const user = await UserModel.findOne({ userId: req.user!.userId });
           if (user && user.profile) {
             updateData.profile = { ...user.profile };
           }
@@ -332,7 +306,7 @@ export const updateProfile: RequestHandler = async (req, res) => {
           updateData.notifications = notifications;
         }
 
-        const user = await User.findOneAndUpdate(
+        const user = await UserModel.findOneAndUpdate(
           { userId: req.user!.userId },
           updateData,
           { new: true, runValidators: true, upsert: true, setDefaultsOnInsert: true }
@@ -344,58 +318,33 @@ export const updateProfile: RequestHandler = async (req, res) => {
 
         return user;
       },
-      () => {
-        // Fallback: return mock updated user
-        const updatedMockUser = {
-          ...mockUser,
-          userId: req.user!.userId,
-          email: email || req.user!.email,
-          name: name || req.user!.name,
-          profile: {
-            ...mockUser.profile,
-            bio: bio !== undefined ? bio : mockUser.profile.bio,
-            avatar: avatar !== undefined ? avatar : mockUser.profile.avatar,
-            phone: phone !== undefined ? phone : mockUser.profile.phone,
-            location: location !== undefined ? location : mockUser.profile.location,
-          },
-          preferences: preferences || (mockUser as any).preferences || {},
-          notifications: notifications || (mockUser as any).notifications || {
-            emailNotifications: true,
-            outfitSuggestions: true,
-            communityUpdates: true,
-            sustainabilityTips: true,
-            marketplaceAlerts: false,
-          },
-        };
-        return updatedMockUser;
-      },
+      () => { throw new Error("Database unavailable"); },
       "Update user profile"
     );
-
-    if (result instanceof Error) {
-      return res.status(404).json({ error: result.message });
-    }
-
+    
     res.json({
       success: true,
       message: "Profile updated successfully",
       user: {
-        userId: result.userId,
-        email: result.email,
-        name: result.name,
-        bio: result.profile?.bio,
-        avatar: result.profile?.avatar,
+        userId: (result as any).userId,
+        email: (result as any).email,
+        name: (result as any).name,
+        bio: (result as any).profile?.bio,
+        avatar: (result as any).profile?.avatar,
         phone: (result as any).phone,
         location: (result as any).location,
         preferences: (result as any).preferences,
         notifications: (result as any).notifications,
-        profile: result.profile,
+        profile: (result as any).profile,
         sustainability: (result as any).sustainability,
       },
     });
   } catch (error) {
+    if ((error as any)?.message === "EMAIL_ALREADY_IN_USE") {
+      return res.status(409).json({ error: "Email already in use" });
+    }
     console.error("Update profile error:", error);
-    res.status(500).json({ error: "Failed to update profile" });
+    return res.status(500).json({ error: "Failed to update profile" });
   }
 };
 
@@ -410,13 +359,13 @@ export const changePassword: RequestHandler = async (req, res) => {
 
     const result = await executeWithFallback(
       async () => {
-        const user = await User.findOne({ userId: req.user!.userId });
+        const user = await UserModel.findOne({ userId: req.user!.userId });
         if (!user || !user.password) {
           throw new Error("User not found");
         }
 
         // Verify current password
-        const isPasswordValid = await user.comparePassword(currentPassword);
+        const isPasswordValid = await (user as any).comparePassword(currentPassword);
         if (!isPasswordValid) {
           throw new Error("Current password is incorrect");
         }
@@ -426,14 +375,7 @@ export const changePassword: RequestHandler = async (req, res) => {
         await user.save();
         return { success: true };
       },
-      () => {
-        // Fallback: simulate password change (demo mode)
-        if (!currentPassword || !newPassword) {
-          throw new Error("Current password is incorrect");
-        }
-        // In demo mode, just return success
-        return { success: true };
-      },
+      () => { throw new Error("Database unavailable"); },
       "Change password"
     );
 

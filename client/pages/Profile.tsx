@@ -294,13 +294,15 @@ export default function Profile() {
                           <User className="w-12 h-12 text-muted-foreground" />
                         )}
                       </div>
-                      <label htmlFor="avatar-upload" className="absolute bottom-0 right-0 p-2 bg-primary rounded-full cursor-pointer hover:bg-primary/90">
+                      <label htmlFor="avatar-upload" title="Upload profile picture" className="absolute bottom-0 right-0 p-2 bg-primary rounded-full cursor-pointer hover:bg-primary/90">
                         <Camera className="w-4 h-4 text-primary-foreground" />
+                        <span className="sr-only">Upload profile picture</span>
                         <input
                           id="avatar-upload"
                           type="file"
                           accept="image/*"
                           className="hidden"
+                          aria-label="Upload profile picture"
                           onChange={handleAvatarChange}
                         />
                       </label>
@@ -381,9 +383,9 @@ export default function Profile() {
                   </CardHeader>
                   <CardContent className="grid md:grid-cols-3 gap-4">
                     <div className="space-y-2">
-                      <Label>Top Size</Label>
+                      <Label id="topSizeLabel" htmlFor="topSize">Top Size</Label>
                       <Select value={preferences.topSize} onValueChange={(value) => setPreferences(prev => ({ ...prev, topSize: value }))}>
-                        <SelectTrigger>
+                        <SelectTrigger id="topSize" aria-labelledby="topSizeLabel">
                           <SelectValue placeholder="Select size" />
                         </SelectTrigger>
                         <SelectContent>
@@ -394,9 +396,9 @@ export default function Profile() {
                       </Select>
                     </div>
                     <div className="space-y-2">
-                      <Label>Bottom Size</Label>
+                      <Label id="bottomSizeLabel" htmlFor="bottomSize">Bottom Size</Label>
                       <Select value={preferences.bottomSize} onValueChange={(value) => setPreferences(prev => ({ ...prev, bottomSize: value }))}>
-                        <SelectTrigger>
+                        <SelectTrigger id="bottomSize" aria-labelledby="bottomSizeLabel">
                           <SelectValue placeholder="Select size" />
                         </SelectTrigger>
                         <SelectContent>
@@ -407,8 +409,9 @@ export default function Profile() {
                       </Select>
                     </div>
                     <div className="space-y-2">
-                      <Label>Shoe Size</Label>
+                      <Label htmlFor="shoeSize">Shoe Size</Label>
                       <Input
+                        id="shoeSize"
                         value={preferences.shoeSize}
                         onChange={(e) => setPreferences(prev => ({ ...prev, shoeSize: e.target.value }))}
                         placeholder="US 9"
@@ -532,55 +535,65 @@ export default function Profile() {
                 <CardContent className="space-y-6">
                   <div className="flex items-center justify-between">
                     <div>
-                      <h4 className="font-medium">Email Notifications</h4>
+                      <h4 id="label-emailNotifications" className="font-medium">Email Notifications</h4>
                       <p className="text-sm text-muted-foreground">Receive updates via email</p>
                     </div>
                     <Switch
+                      id="emailNotifications"
                       checked={notifications.emailNotifications}
+                      aria-labelledby="label-emailNotifications"
                       onCheckedChange={(checked) => setNotifications(prev => ({ ...prev, emailNotifications: checked }))}
                     />
                   </div>
 
                   <div className="flex items-center justify-between">
                     <div>
-                      <h4 className="font-medium">Outfit Suggestions</h4>
+                      <h4 id="label-outfitSuggestions" className="font-medium">Outfit Suggestions</h4>
                       <p className="text-sm text-muted-foreground">Daily AI-powered outfit recommendations</p>
                     </div>
                     <Switch
+                      id="outfitSuggestions"
                       checked={notifications.outfitSuggestions}
+                      aria-labelledby="label-outfitSuggestions"
                       onCheckedChange={(checked) => setNotifications(prev => ({ ...prev, outfitSuggestions: checked }))}
                     />
                   </div>
 
                   <div className="flex items-center justify-between">
                     <div>
-                      <h4 className="font-medium">Community Updates</h4>
+                      <h4 id="label-communityUpdates" className="font-medium">Community Updates</h4>
                       <p className="text-sm text-muted-foreground">New posts and events from your circles</p>
                     </div>
                     <Switch
+                      id="communityUpdates"
                       checked={notifications.communityUpdates}
+                      aria-labelledby="label-communityUpdates"
                       onCheckedChange={(checked) => setNotifications(prev => ({ ...prev, communityUpdates: checked }))}
                     />
                   </div>
 
                   <div className="flex items-center justify-between">
                     <div>
-                      <h4 className="font-medium">Sustainability Tips</h4>
+                      <h4 id="label-sustainabilityTips" className="font-medium">Sustainability Tips</h4>
                       <p className="text-sm text-muted-foreground">Weekly eco-friendly fashion advice</p>
                     </div>
                     <Switch
+                      id="sustainabilityTips"
                       checked={notifications.sustainabilityTips}
+                      aria-labelledby="label-sustainabilityTips"
                       onCheckedChange={(checked) => setNotifications(prev => ({ ...prev, sustainabilityTips: checked }))}
                     />
                   </div>
 
                   <div className="flex items-center justify-between">
                     <div>
-                      <h4 className="font-medium">Marketplace Alerts</h4>
+                      <h4 id="label-marketplaceAlerts" className="font-medium">Marketplace Alerts</h4>
                       <p className="text-sm text-muted-foreground">New items matching your preferences</p>
                     </div>
                     <Switch
+                      id="marketplaceAlerts"
                       checked={notifications.marketplaceAlerts}
+                      aria-labelledby="label-marketplaceAlerts"
                       onCheckedChange={(checked) => setNotifications(prev => ({ ...prev, marketplaceAlerts: checked }))}
                     />
                   </div>

@@ -696,12 +696,17 @@ export default function Community() {
                           <span>Progress</span>
                           <span>{challenge.progress}%</span>
                         </div>
-                        <div className="w-full bg-muted rounded-full h-2">
-                          <div 
-                            className="bg-primary h-2 rounded-full" 
-                            style={{ width: `${challenge.progress}%` }}
+                        <div className="w-full bg-muted rounded-full h-2" aria-hidden="true">
+                          <div
+                            className={`bg-primary h-2 rounded-full transition-all ${
+                              challenge.progress >= 100 ? 'w-full' :
+                              challenge.progress >= 75 ? 'w-3/4' :
+                              challenge.progress >= 50 ? 'w-1/2' :
+                              challenge.progress >= 25 ? 'w-1/4' : 'w-0'
+                            }`}
                           ></div>
                         </div>
+                        <span className="sr-only">Progress: {challenge.progress}%</span>
                       </div>
                       
                       <div className="p-3 bg-primary/5 rounded-lg">

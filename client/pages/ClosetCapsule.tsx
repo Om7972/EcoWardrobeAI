@@ -407,7 +407,7 @@ export default function ClosetCapsule() {
                       {step > 1 && <CheckCircle className="w-4 h-4 text-green-500" />}
                     </div>
                     <div className="h-2 bg-muted rounded-full">
-                      <div className={`h-full rounded-full ${step >= 1 ? "bg-primary" : "bg-muted"}`} style={{ width: step >= 1 ? "100%" : "0%" }}></div>
+                      <div className={`h-full rounded-full transition-all ${step >= 1 ? "bg-primary w-full" : "bg-muted w-0"}`}></div>
                     </div>
                   </div>
                   
@@ -419,7 +419,7 @@ export default function ClosetCapsule() {
                       {step > 2 && <CheckCircle className="w-4 h-4 text-green-500" />}
                     </div>
                     <div className="h-2 bg-muted rounded-full">
-                      <div className={`h-full rounded-full ${step >= 2 ? "bg-primary" : "bg-muted"}`} style={{ width: step >= 2 ? "100%" : "0%" }}></div>
+                      <div className={`h-full rounded-full transition-all ${step >= 2 ? "bg-primary w-full" : "bg-muted w-0"}`}></div>
                     </div>
                   </div>
                   
@@ -430,7 +430,7 @@ export default function ClosetCapsule() {
                       </span>
                     </div>
                     <div className="h-2 bg-muted rounded-full">
-                      <div className={`h-full rounded-full ${step >= 3 ? "bg-primary" : "bg-muted"}`} style={{ width: step >= 3 ? "100%" : "0%" }}></div>
+                      <div className={`h-full rounded-full transition-all ${step >= 3 ? "bg-primary w-full" : "bg-muted w-0"}`}></div>
                     </div>
                   </div>
                 </div>

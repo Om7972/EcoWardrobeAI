@@ -79,7 +79,7 @@ export const createStyleCircle: RequestHandler = async (req, res) => {
         });
         
         await styleCircle.save();
-        return styleCircle;
+        return styleCircle.toObject() as any;
       },
       () => {
         // Fallback: return mock created circle
@@ -139,12 +139,13 @@ export const getAllStyleCircles: RequestHandler = async (req, res) => {
         const styleCircles = await StyleCircle.find(filter)
           .sort({ memberCount: -1, postCount: -1 })
           .skip(skip)
-          .limit(limitNum);
+          .limit(limitNum)
+          .lean();
         
         const total = await StyleCircle.countDocuments(filter);
         
         return {
-          styleCircles,
+          styleCircles: styleCircles as any[],
           total,
           page: pageNum,
           limit: limitNum
@@ -206,7 +207,7 @@ export const getStyleCircle: RequestHandler = async (req, res) => {
     
     const result = await executeWithFallback(
       async () => {
-        const styleCircle = await StyleCircle.findById(circleId);
+        const styleCircle = await StyleCircle.findById(circleId)?.lean().exec() as any;
         if (!styleCircle) {
           throw new Error("Style circle not found");
         }
@@ -249,7 +250,7 @@ export const updateStyleCircle: RequestHandler = async (req, res) => {
           circleId,
           updateData,
           { new: true }
-        );
+        )?.lean() as any;
         
         if (!styleCircle) {
           throw new Error("Style circle not found");
@@ -266,7 +267,7 @@ export const updateStyleCircle: RequestHandler = async (req, res) => {
           ...mockCircle,
           ...updateData,
           updatedAt: new Date()
-        };
+        } as any;
       },
       "Update style circle"
     );
@@ -292,7 +293,7 @@ export const deleteStyleCircle: RequestHandler = async (req, res) => {
     
     const result = await executeWithFallback(
       async () => {
-        const styleCircle = await StyleCircle.findByIdAndDelete(circleId);
+        const styleCircle = await StyleCircle.findByIdAndDelete(circleId)?.lean() as any;
         
         if (!styleCircle) {
           throw new Error("Style circle not found");
@@ -377,7 +378,7 @@ export const joinStyleCircle: RequestHandler = async (req, res) => {
           ],
           memberCount: mockCircle.memberCount + 1,
           updatedAt: new Date()
-        };
+        } as any;
       },
       "Join style circle"
     );
@@ -444,7 +445,7 @@ export const leaveStyleCircle: RequestHandler = async (req, res) => {
           members: updatedMembers,
           memberCount: updatedMembers.length,
           updatedAt: new Date()
-        };
+        } as any;
       },
       "Leave style circle"
     );
@@ -490,14 +491,15 @@ export const createCirclePost: RequestHandler = async (req, res) => {
           images: images || [],
           likes: 0,
           comments: 0,
-          createdAt: new Date()
+          createdAt: new Date(),
+          updatedAt: new Date()
         };
         
-        styleCircle.posts.push(newPost);
+        styleCircle.posts.push(newPost as any);
         styleCircle.postCount = styleCircle.posts.length;
         
         await styleCircle.save();
-        return styleCircle;
+        return styleCircle.toObject() as any;
       },
       () => {
         // Fallback: return mock updated circle
@@ -569,11 +571,15 @@ export const getCirclePosts: RequestHandler = async (req, res) => {
         
         // Sort posts by createdAt descending (newest first)
         const posts = styleCircle.posts
+          .map((p: any) => ({
+            ...p,
+            updatedAt: p.updatedAt || p.createdAt || new Date(),
+          }))
           .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
           .slice(skip, skip + limitNum);
         
         return {
-          posts,
+          posts: posts as any[],
           total: styleCircle.posts.length,
           page: pageNum,
           limit: limitNum

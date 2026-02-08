@@ -72,8 +72,9 @@ export const generateOutfit: RequestHandler = async (req, res) => {
     });
 
     // Get random items from user's closet for the outfit
-    const closetItems = await ClothingItem.find({ userId })
+    const closetItems = await (ClothingItem.find as any)({ userId })
       .limit(5)
+      .lean()
       .exec();
     const itemIds = closetItems.map((item) => item._id.toString());
 
@@ -127,9 +128,10 @@ export const getUserOutfits: RequestHandler = async (req, res) => {
         if (saved === "true") query.saved = true;
         if (occasion) query.occasion = occasion;
 
-        const outfits = await Outfit.find(query)
+        const outfits = await (Outfit.find as any)(query)
           .populate("items")
-          .sort({ generatedAt: -1 });
+          .sort({ generatedAt: -1 })
+          .lean();
 
         return outfits;
       },
@@ -168,7 +170,7 @@ export const toggleSaveOutfit: RequestHandler = async (req, res) => {
   try {
     const { outfitId } = req.params;
 
-    const outfit = await Outfit.findById(outfitId);
+    const outfit = await (Outfit.findById as any)(outfitId);
 
     if (!outfit) {
       res.status(404).json({ error: "Outfit not found" });
@@ -199,11 +201,11 @@ export const rateOutfit: RequestHandler = async (req, res) => {
       return;
     }
 
-    const outfit = await Outfit.findByIdAndUpdate(
+    const outfit = await (Outfit.findByIdAndUpdate as any)(
       outfitId,
       { rating },
       { new: true }
-    );
+    ).lean();
 
     if (!outfit) {
       res.status(404).json({ error: "Outfit not found" });

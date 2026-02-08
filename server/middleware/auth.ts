@@ -49,7 +49,7 @@ export const authenticateToken = async (
     }
 
     try {
-      const user = await User.findOne({ userId: decoded.userId });
+      const user = await (User.findOne as any)({ userId: decoded.userId }).lean();
       if (user) {
         req.user = decoded;
         next();

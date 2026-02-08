@@ -39,7 +39,12 @@ function generateMatchReason(styleScore: number): string {
 export function generateCircularMatches(
   userStyles: string[]
 ): CircularMatch[] {
-  const mockGarments = [
+  const mockGarments: Array<{
+    name: string;
+    image: string;
+    condition: "like-new" | "excellent" | "good";
+    targetUserId: string;
+  }> = [
     {
       name: "Vintage Denim Jacket",
       image: "https://via.placeholder.com/300?text=Denim+Jacket",

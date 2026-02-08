@@ -46,7 +46,8 @@ const styleCirclePostSchema = new mongoose.Schema<IStyleCirclePost>({
   images: [{ type: String }],
   likes: { type: Number, default: 0 },
   comments: { type: Number, default: 0 },
-  createdAt: { type: Date, default: Date.now }
+  createdAt: { type: Date, default: Date.now },
+  updatedAt: { type: Date, default: Date.now }
 });
 
 const styleCircleSchema = new mongoose.Schema<IStyleCircle>(

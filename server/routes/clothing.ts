@@ -162,8 +162,8 @@ export const getUserCloset: RequestHandler = async (req, res) => {
         if (color) query.color = { $in: [color] };
         if (brand) query.brand = brand;
 
-        const items = await ClothingItem.find(query).sort({ uploadedAt: -1 });
-        return items;
+        const items = await (ClothingItem.find as any)(query).sort({ uploadedAt: -1 }).lean();
+        return items as any[];
       },
       () => {
         // Fallback: return mock clothing items
@@ -205,7 +205,7 @@ export const getClothingItem: RequestHandler = async (req, res) => {
   try {
     const { itemId } = req.params;
 
-    const item = await ClothingItem.findById(itemId);
+    const item = await (ClothingItem.findById as any)(itemId).lean();
 
     if (!item) {
       res.status(404).json({ error: "Item not found" });
@@ -228,9 +228,9 @@ export const updateClothingItem: RequestHandler = async (req, res) => {
     const { itemId } = req.params;
     const updateData = req.body;
 
-    const item = await ClothingItem.findByIdAndUpdate(itemId, updateData, {
+    const item = await (ClothingItem.findByIdAndUpdate as any)(itemId, updateData, {
       new: true,
-    });
+    }).lean();
 
     if (!item) {
       res.status(404).json({ error: "Item not found" });
@@ -252,7 +252,7 @@ export const deleteClothingItem: RequestHandler = async (req, res) => {
   try {
     const { itemId } = req.params;
 
-    const item = await ClothingItem.findByIdAndDelete(itemId);
+    const item = await (ClothingItem.findByIdAndDelete as any)(itemId).lean();
 
     if (!item) {
       res.status(404).json({ error: "Item not found" });
@@ -274,7 +274,7 @@ export const getEcoScore: RequestHandler = async (req, res) => {
   try {
     const { itemId } = req.params;
 
-    const item = await ClothingItem.findById(itemId);
+    const item = await (ClothingItem.findById as any)(itemId);
 
     if (!item) {
       res.status(404).json({ error: "Item not found" });

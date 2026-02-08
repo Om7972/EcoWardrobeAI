@@ -148,7 +148,6 @@ export function EcoMaintenanceWidget() {
                   border: `1px solid var(--border)`,
                   borderRadius: "0.75rem",
                 }}
-                textStyle={{ color: "var(--foreground)" }}
               />
               <Line
                 type="monotone"

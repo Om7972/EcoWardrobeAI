@@ -11,7 +11,7 @@ export const getOrCreateUser: RequestHandler = async (req, res) => {
       return;
     }
 
-    let user = await User.findOne({ userId });
+    let user = await (User.findOne as any)({ userId }).lean();
 
     if (!user) {
       user = new User({
@@ -49,7 +49,7 @@ export const getUserProfile: RequestHandler = async (req, res) => {
   try {
     const { userId } = req.params;
 
-    const user = await User.findOne({ userId });
+    const user = await (User.findOne as any)({ userId }).lean();
 
     if (!user) {
       res.status(404).json({ error: "User not found" });
@@ -72,9 +72,9 @@ export const updateUserProfile: RequestHandler = async (req, res) => {
     const { userId } = req.params;
     const updateData = req.body;
 
-    const user = await User.findOneAndUpdate({ userId }, updateData, {
+    const user = await (User.findOneAndUpdate as any)({ userId }, updateData, {
       new: true,
-    });
+    }).lean();
 
     if (!user) {
       res.status(404).json({ error: "User not found" });
@@ -97,11 +97,11 @@ export const updateStylePreferences: RequestHandler = async (req, res) => {
     const { userId } = req.params;
     const { preferences } = req.body;
 
-    const user = await User.findOneAndUpdate(
+    const user = await (User.findOneAndUpdate as any)(
       { userId },
       { "profile.stylePreferences": preferences },
       { new: true }
-    );
+    ).lean();
 
     if (!user) {
       res.status(404).json({ error: "User not found" });

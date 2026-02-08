@@ -66,9 +66,9 @@ export const calculateImpactMetrics: RequestHandler = async (req, res) => {
 
     const result = await executeWithFallback(
       async () => {
-        const user = await User.findOne({ userId });
-        const closetItems = await ClothingItem.find({ userId });
-        const outfits = await Outfit.find({ userId });
+        const user = await (User.findOne as any)({ userId }).lean();
+        const closetItems = await (ClothingItem.find as any)({ userId }).lean();
+        const outfits = await (Outfit.find as any)({ userId }).lean();
 
         // Mock calculations based on items and outfits
         const waterSavedPerItem = 2700; // liters per year of extended use
@@ -123,9 +123,9 @@ export const getImpactHistory: RequestHandler = async (req, res) => {
 
     const result = await executeWithFallback(
       async () => {
-        const closetItems = await ClothingItem.find({ userId }).sort({
+        const closetItems = await (ClothingItem.find as any)({ userId }).sort({
           uploadedAt: -1,
-        });
+        }).lean();
 
         const history = closetItems.map((item) => ({
           date: item.uploadedAt,
@@ -162,8 +162,8 @@ export const getAchievements: RequestHandler = async (req, res) => {
 
     const result = await executeWithFallback(
       async () => {
-        const closetItems = await ClothingItem.find({ userId });
-        const outfits = await Outfit.find({ userId });
+        const closetItems = await (ClothingItem.find as any)({ userId }).lean();
+        const outfits = await (Outfit.find as any)({ userId }).lean();
 
         const achievements = [];
 

@@ -288,7 +288,6 @@ export function MaterialFootprintAnalyzer() {
                     border: `1px solid var(--border)`,
                     borderRadius: "0.75rem",
                   }}
-                  textStyle={{ color: "var(--foreground)" }}
                 />
                 <Bar dataKey="durabilityScore" fill="var(--primary)" name="Durability" />
               </BarChart>

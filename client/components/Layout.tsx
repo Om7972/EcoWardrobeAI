@@ -70,6 +70,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
       path: "#", 
       children: [
         { label: "AI Dashboard", path: "/ai-services" },
+        { label: "Virtual Closet", path: "/closet" },
         { label: "Outfit Generator", path: "/outfit-generator" },
         { label: "Climate Assistant", path: "/ai-climate-assistant" },
         { label: "Virtual Stylist", path: "/eco-stylist" },

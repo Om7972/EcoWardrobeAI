@@ -169,7 +169,7 @@ export default function CareRepairHub() {
     try {
       setLoading(true);
       const queryParams = new URLSearchParams();
-      if (serviceFilter.type) queryParams.append("type", serviceFilter.type);
+      if (serviceFilter.type && serviceFilter.type !== "all") queryParams.append("type", serviceFilter.type);
       if (serviceFilter.search) queryParams.append("search", serviceFilter.search);
       
       const response = await fetch(`/api/care/all-services?${queryParams.toString()}`);
@@ -261,7 +261,7 @@ export default function CareRepairHub() {
   };
 
   const filteredServiceProviders = serviceProviders.filter(provider => {
-    const matchesType = !serviceFilter.type || provider.type === serviceFilter.type;
+    const matchesType = !serviceFilter.type || serviceFilter.type === "all" || provider.type === serviceFilter.type;
     const matchesSearch = !serviceFilter.search || 
       provider.name.toLowerCase().includes(serviceFilter.search.toLowerCase()) ||
       provider.address.toLowerCase().includes(serviceFilter.search.toLowerCase()) ||
@@ -725,7 +725,7 @@ export default function CareRepairHub() {
                         <SelectValue placeholder="Filter by type" />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="">All Types</SelectItem>
+                        <SelectItem value="all">All Types</SelectItem>
                         <SelectItem value="tailor">Tailors</SelectItem>
                         <SelectItem value="cobbler">Cobblers</SelectItem>
                         <SelectItem value="cleaner">Cleaners</SelectItem>

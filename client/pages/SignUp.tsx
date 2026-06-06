@@ -71,77 +71,128 @@ export default function SignUp() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-[url('/images/leaves-bg.jpg')] bg-cover bg-center">
-      <div className="w-full max-w-md p-8 rounded-lg bg-black/60 backdrop-blur-md text-white shadow-xl border border-white/10">
-        <h1 className="text-2xl font-bold text-center mb-6">SignUp</h1>
-        
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div>
-            <label htmlFor="name" className="block text-sm font-medium mb-1">
-              Name
-            </label>
-            <input
-              id="name"
-              type="text"
-              name="name"
-              value={formData.name}
-              onChange={handleChange}
-              placeholder="Name"
-              className="w-full p-3 rounded-md bg-transparent border border-white/20 focus:border-white/50 focus:outline-none"
-              disabled={loading}
-            />
+    <div className="min-h-screen bg-gradient-to-br from-primary/5 via-background to-nature/5 flex items-center justify-center px-4 py-12">
+      <div className="w-full max-w-md">
+        {/* Logo */}
+        <div className="flex items-center justify-center gap-2 mb-8 hover-float3d">
+          <div className="w-10 h-10 rounded-lg bg-primary flex items-center justify-center">
+            <Leaf className="w-6 h-6 text-primary-foreground" />
           </div>
-          
-          <div>
-            <label htmlFor="email" className="block text-sm font-medium mb-1">
-              Email
-            </label>
-            <input
-              id="email"
-              type="email"
-              name="email"
-              value={formData.email}
-              onChange={handleChange}
-              placeholder="Email"
-              className="w-full p-3 rounded-md bg-transparent border border-white/20 focus:border-white/50 focus:outline-none"
-              disabled={loading}
-            />
-          </div>
-          
-          <div>
-            <label htmlFor="password" className="block text-sm font-medium mb-1">
-              Password
-            </label>
-            <input
-              id="password"
-              type="password"
-              name="password"
-              value={formData.password}
-              onChange={handleChange}
-              placeholder="Password"
-              className="w-full p-3 rounded-md bg-transparent border border-white/20 focus:border-white/50 focus:outline-none"
-              disabled={loading}
-            />
-          </div>
-          
-          <button
-            type="submit"
-            disabled={loading}
-            className="w-full py-3 rounded-md bg-white text-black font-medium hover:bg-white/90 transition-colors"
-          >
-            {loading ? "Signing up..." : "Signup"}
-          </button>
-        </form>
-        
-        <div className="mt-4 text-center">
-          <p className="text-white/70">OR</p>
+          <span className="text-2xl font-bold text-foreground">EcoWardrobe AI</span>
         </div>
-        
-        <div className="mt-4 text-center">
-          <Link to="/signin" className="text-white/90 hover:text-white transition-colors">
-            Login Page
-          </Link>
+
+        {/* Card */}
+        <div className="bg-card border border-border/50 rounded-2xl p-8 shadow-lg hover-tilt3d">
+          <div className="space-y-2 mb-8">
+            <h1 className="text-2xl font-bold text-foreground">Create Account</h1>
+            <p className="text-foreground/70">
+              Join the sustainable fashion movement today
+            </p>
+          </div>
+
+          <form onSubmit={handleSubmit} className="space-y-6">
+            <div className="space-y-4">
+              <div className="space-y-2">
+                <label
+                  htmlFor="name"
+                  className="text-sm font-medium text-foreground"
+                >
+                  Name
+                </label>
+                <div className="relative group">
+                  <User className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground group-hover:text-primary transition-colors duration-200" />
+                  <input
+                    id="name"
+                    name="name"
+                    type="text"
+                    required
+                    value={formData.name}
+                    onChange={handleChange}
+                    className="w-full h-11 pl-10 pr-4 rounded-md border border-input bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary/30 transition-all duration-200"
+                    placeholder="John Doe"
+                    disabled={loading}
+                  />
+                  <div className="absolute bottom-0 left-0 h-0.5 w-0 bg-primary group-hover:w-full transition-all duration-300"></div>
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <label
+                  htmlFor="email"
+                  className="text-sm font-medium text-foreground"
+                >
+                  Email
+                </label>
+                <div className="relative group">
+                  <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground group-hover:text-primary transition-colors duration-200" />
+                  <input
+                    id="email"
+                    name="email"
+                    type="email"
+                    required
+                    value={formData.email}
+                    onChange={handleChange}
+                    className="w-full h-11 pl-10 pr-4 rounded-md border border-input bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary/30 transition-all duration-200"
+                    placeholder="you@example.com"
+                    disabled={loading}
+                  />
+                  <div className="absolute bottom-0 left-0 h-0.5 w-0 bg-primary group-hover:w-full transition-all duration-300"></div>
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <label
+                  htmlFor="password"
+                  className="text-sm font-medium text-foreground"
+                >
+                  Password
+                </label>
+                <div className="relative group">
+                  <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground group-hover:text-primary transition-colors duration-200" />
+                  <input
+                    id="password"
+                    name="password"
+                    type="password"
+                    required
+                    value={formData.password}
+                    onChange={handleChange}
+                    className="w-full h-11 pl-10 pr-4 rounded-md border border-input bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary/30 transition-all duration-200"
+                    placeholder="••••••••"
+                    disabled={loading}
+                  />
+                  <div className="absolute bottom-0 left-0 h-0.5 w-0 bg-primary group-hover:w-full transition-all duration-300"></div>
+                </div>
+              </div>
+            </div>
+
+            <button
+              type="submit"
+              disabled={loading}
+              className="w-full h-11 px-4 py-2 rounded-md bg-primary text-primary-foreground hover:bg-primary/90 focus:outline-none focus:ring-2 focus:ring-primary/30 flex items-center justify-center transition-all duration-200 hover:translate-y-[-2px] hover:shadow-lg"
+            >
+              {loading ? (
+                <span className="animate-pulse">Creating account...</span>
+              ) : (
+                "Sign up"
+              )}
+            </button>
+          </form>
+
+          <div className="mt-8 pt-6 border-t border-border/40 text-center text-sm">
+            <span className="text-foreground/70">Already have an account?</span>{" "}
+            <Link
+              to="/signin"
+              className="font-medium text-primary hover:text-primary/80 transition-colors duration-200"
+            >
+              Sign in
+            </Link>
+          </div>
         </div>
+
+        {/* Footer */}
+        <p className="text-center text-sm text-foreground/50 mt-6">
+          We protect your privacy. Read our Privacy Policy.
+        </p>
       </div>
     </div>
   );

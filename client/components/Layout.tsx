@@ -135,8 +135,8 @@ export default function Layout({ children }: { children: React.ReactNode }) {
             title="EcoWardrobe AI Home"
             className="flex items-center gap-2 group"
           >
-            <div className="flex items-center justify-center w-8 h-8 rounded-lg bg-primary/10 group-hover:bg-primary/20 transition-colors">
-              <Leaf className="w-5 h-5 text-primary" />
+            <div className="flex items-center justify-center w-8 h-8 rounded-lg transition-opacity group-hover:opacity-85">
+              <img src="/EcoWardrobe_png.svg" alt="EcoWardrobe AI Logo" className="w-8 h-8 object-contain" />
             </div>
             <span className="hidden sm:inline-block font-bold text-lg text-foreground group-hover:text-primary transition-colors">
               EcoWardrobe AI
@@ -259,8 +259,8 @@ export default function Layout({ children }: { children: React.ReactNode }) {
           <div className="md:hidden fixed inset-0 z-50 bg-background">
             <div className="flex items-center justify-between p-4 border-b">
               <Link to="/" className="flex items-center gap-2" onClick={() => setMobileMenuOpen(false)}>
-                <div className="flex items-center justify-center w-8 h-8 rounded-lg bg-primary/10">
-                  <Leaf className="w-5 h-5 text-primary" />
+                <div className="flex items-center justify-center w-8 h-8 rounded-lg">
+                  <img src="/EcoWardrobe_png.svg" alt="EcoWardrobe AI Logo" className="w-8 h-8 object-contain" />
                 </div>
                 <span className="font-bold text-lg">EcoWardrobe AI</span>
               </Link>
@@ -380,8 +380,8 @@ export default function Layout({ children }: { children: React.ReactNode }) {
           <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
             <div>
               <div className="flex items-center gap-2 mb-4">
-                <div className="flex items-center justify-center w-8 h-8 rounded-lg bg-primary/10">
-                  <Leaf className="w-5 h-5 text-primary" />
+                <div className="flex items-center justify-center w-8 h-8 rounded-lg">
+                  <img src="/EcoWardrobe_png.svg" alt="EcoWardrobe AI Logo" className="w-8 h-8 object-contain" />
                 </div>
                 <span className="font-bold text-lg">EcoWardrobe AI</span>
               </div>

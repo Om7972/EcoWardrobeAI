@@ -98,8 +98,8 @@ export default function SignIn() {
       <div className="w-full max-w-md">
         {/* Logo */}
         <div className="flex items-center justify-center gap-2 mb-8 hover-float3d">
-          <div className="w-10 h-10 rounded-lg bg-primary flex items-center justify-center">
-            <Leaf className="w-6 h-6 text-primary-foreground" />
+          <div className="w-10 h-10 rounded-lg flex items-center justify-center">
+            <img src="/EcoWardrobe_png.svg" alt="EcoWardrobe AI Logo" className="w-10 h-10 object-contain" />
           </div>
           <span className="text-2xl font-bold text-foreground">EcoWardrobe AI</span>
         </div>

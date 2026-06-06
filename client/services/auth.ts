@@ -109,7 +109,7 @@ export const socialLogin = async (provider: string, token: string): Promise<Auth
     }
     
     return response.data;
-  } catch (error) {
+  } catch (error: any) {
     throw new Error(error.response?.data?.message || 'Social login failed');
   }
 };

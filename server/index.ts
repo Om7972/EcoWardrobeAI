@@ -80,6 +80,10 @@ export async function createServer(): Promise<Express> {
     res.json({ message: ping });
   });
 
+  app.get("/health", (_req, res) => {
+    res.json({ status: "ok", message: "healthy" });
+  });
+
   app.get("/api/demo", handleDemo);
 
   // Authentication routes

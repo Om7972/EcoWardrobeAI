@@ -17,8 +17,11 @@ import {
   Camera,
   Award,
   BarChart3,
-  TrendingUpIcon
+  TrendingUpIcon,
+  ArrowLeft
 } from "lucide-react";
+import { Link } from "react-router-dom";
+import Layout from "@/components/Layout";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -168,10 +171,88 @@ export default function StyleCircles() {
       if (!response.ok) throw new Error("Failed to fetch style circles");
       
       const data = await response.json();
+      if (!data.data || data.data.length === 0) {
+        throw new Error("No circles returned");
+      }
       setStyleCircles(data.data);
     } catch (error) {
-      console.error("Error fetching style circles:", error);
-      toast.error("Failed to load style circles");
+      console.error("Error fetching style circles, using mock:", error);
+      const mockCircles: StyleCircle[] = [
+        {
+          _id: "circle-1",
+          name: "Minimalist Moms",
+          description: "A community for moms sharing tips on kids' capsule wardrobes, eco-friendly parenting, and minimalist closet lifestyle.",
+          category: "Minimalist Moms",
+          members: [
+            { userId: "user-1", role: "admin", joinedAt: "2026-01-10" },
+            { userId: "user-2", role: "member", joinedAt: "2026-02-14" },
+            { userId: "user-3", role: "moderator", joinedAt: "2026-03-01" }
+          ],
+          posts: [],
+          privacy: "public",
+          tags: ["minimalism", "secondhand", "eco-friendly"],
+          memberCount: 24,
+          postCount: 15,
+          createdAt: "2026-01-10T00:00:00.000Z",
+          updatedAt: "2026-01-10T00:00:00.000Z",
+          events: [
+            {
+              id: "event-1",
+              title: "Kids Clothing Swap Day",
+              description: "Bring outgrown kids clothing and swap them for next sizes!",
+              date: "2026-07-20T14:00:00.000Z",
+              location: "Community Center Park",
+              type: "in-person"
+            }
+          ],
+          achievements: [
+            {
+              id: "ach-1",
+              title: "Green Starters",
+              description: "Gathered 20+ members to support circular fashion",
+              icon: "🌱",
+              earnedAt: "2026-02-01"
+            }
+          ]
+        },
+        {
+          _id: "circle-2",
+          name: "Vintage Lovers",
+          description: "Celebrating retro fashion, vintage finds, and historical garment preservation. Let's make old gold shine again!",
+          category: "Vintage Lovers",
+          members: [
+            { userId: "user-4", role: "admin", joinedAt: "2026-01-15" }
+          ],
+          posts: [],
+          privacy: "public",
+          tags: ["vintage", "secondhand", "sustainable"],
+          memberCount: 42,
+          postCount: 28,
+          createdAt: "2026-01-15T00:00:00.000Z",
+          updatedAt: "2026-01-15T00:00:00.000Z",
+          events: [],
+          achievements: []
+        },
+        {
+          _id: "circle-3",
+          name: "Streetwear Swappers",
+          description: "Swap oversized tees, vintage hoodies, sneakers and more. Keep the hype, ditch the footprint.",
+          category: "Streetwear Swappers",
+          members: [
+            { userId: "user-5", role: "admin", joinedAt: "2026-02-01" }
+          ],
+          posts: [],
+          privacy: "public",
+          tags: ["streetwear", "thrifting"],
+          memberCount: 18,
+          postCount: 9,
+          createdAt: "2026-02-01T00:00:00.000Z",
+          updatedAt: "2026-02-01T00:00:00.000Z",
+          events: [],
+          achievements: []
+        }
+      ];
+      setStyleCircles(mockCircles);
     } finally {
       setLoading(false);
     }
@@ -185,8 +266,29 @@ export default function StyleCircles() {
       const data = await response.json();
       setCirclePosts(data.data);
     } catch (error) {
-      console.error("Error fetching circle posts:", error);
-      toast.error("Failed to load posts");
+      console.error("Error fetching circle posts, using mock:", error);
+      setCirclePosts([
+        {
+          _id: "post-1",
+          userId: "user-1",
+          content: "Just thrifted this amazing vintage denim jacket! What do you guys think? Fits right into my autumn capsule wardrobe.",
+          images: ["/placeholder.svg"],
+          likes: 12,
+          comments: 3,
+          createdAt: "2026-06-01T12:00:00.000Z",
+          updatedAt: "2026-06-01T12:00:00.000Z"
+        },
+        {
+          _id: "post-2",
+          userId: "user-2",
+          content: "Remember to wash thrifted items in cold water and air-dry to conserve energy and preserve fabric quality!",
+          images: [],
+          likes: 8,
+          comments: 1,
+          createdAt: "2026-06-02T09:30:00.000Z",
+          updatedAt: "2026-06-02T09:30:00.000Z"
+        }
+      ]);
     }
   };
 
@@ -405,8 +507,14 @@ export default function StyleCircles() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-primary/5 via-background to-nature/5">
+    <Layout>
       <div className="container py-8">
+        <div className="mb-4">
+          <Link to="/dashboard" className="inline-flex items-center text-sm font-medium text-muted-foreground hover:text-primary transition-colors">
+            <ArrowLeft className="w-4 h-4 mr-2" />
+            Back to Dashboard
+          </Link>
+        </div>
         {/* Header */}
         <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-8">
           <div>
@@ -1142,6 +1250,6 @@ export default function StyleCircles() {
           </div>
         )}
       </div>
-    </div>
+    </Layout>
   );
 }

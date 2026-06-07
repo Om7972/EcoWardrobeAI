@@ -1,4 +1,6 @@
 import { useState } from "react";
+import { Link } from "react-router-dom";
+import Layout from "@/components/Layout";
 import { 
   Leaf, 
   Globe, 
@@ -16,7 +18,8 @@ import {
   LineChart,
   Medal,
   Crown,
-  Star
+  Star,
+  ArrowLeft
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -253,8 +256,14 @@ export default function ImpactTracker() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-primary/5 via-background to-nature/5">
+    <Layout>
       <div className="container py-8">
+        <div className="mb-4">
+          <Link to="/dashboard" className="inline-flex items-center text-sm font-medium text-muted-foreground hover:text-primary transition-colors">
+            <ArrowLeft className="w-4 h-4 mr-2" />
+            Back to Dashboard
+          </Link>
+        </div>
         {/* Header */}
         <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-8">
           <div>
@@ -727,6 +736,6 @@ export default function ImpactTracker() {
           )}
         </DialogContent>
       </Dialog>
-    </div>
+    </Layout>
   );
 }

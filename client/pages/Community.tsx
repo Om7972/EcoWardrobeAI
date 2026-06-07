@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { Link } from "react-router-dom";
 import Layout from "@/components/Layout";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -31,7 +32,8 @@ import {
   Settings,
   Bell,
   Hash,
-  Link as LinkIcon
+  Link as LinkIcon,
+  ArrowLeft
 } from "lucide-react";
 import {
   Select,
@@ -430,6 +432,12 @@ export default function Community() {
 
   return (
     <Layout>
+      <div className="container max-w-7xl mx-auto px-4 md:px-6 pt-6 -mb-6">
+        <Link to="/dashboard" className="inline-flex items-center text-sm font-medium text-muted-foreground hover:text-primary transition-colors">
+          <ArrowLeft className="w-4 h-4 mr-2" />
+          Back to Dashboard
+        </Link>
+      </div>
       {/* Header */}
       <section className="w-full bg-gradient-to-b from-primary/5 to-background border-b border-border/40 py-8 md:py-12">
         <div className="container max-w-7xl mx-auto px-4 md:px-6">

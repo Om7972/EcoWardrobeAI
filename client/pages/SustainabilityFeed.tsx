@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { Link } from "react-router-dom";
 import Layout from "@/components/Layout";
 import { 
   Newspaper, 
@@ -13,7 +14,8 @@ import {
   User,
   Tag,
   Globe,
-  ExternalLink
+  ExternalLink,
+  ArrowLeft
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -203,6 +205,12 @@ export default function SustainabilityFeed() {
 
   return (
     <Layout>
+      <div className="container max-w-7xl mx-auto px-4 pt-6 -mb-6">
+        <Link to="/dashboard" className="inline-flex items-center text-sm font-medium text-muted-foreground hover:text-primary transition-colors">
+          <ArrowLeft className="w-4 h-4 mr-2" />
+          Back to Dashboard
+        </Link>
+      </div>
       <div className="min-h-screen bg-gradient-to-b from-background to-muted/20">
         {/* Header */}
         <div className="bg-primary/5 border-b border-border/40">

@@ -1,26 +1,29 @@
 import { useState } from "react";
+import { Link } from "react-router-dom";
 import Layout from "@/components/Layout";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { useToast } from "@/components/ui/use-toast";
 import { 
   Leaf, 
   Heart, 
-  ShoppingCart, 
   Filter,
   Search,
   Star,
   Package,
   Shirt,
-  Home,
-  Utensils,
-  Zap,
-  Car,
-  Droplets,
-  TrendingUp,
-  ChevronDown,
-  ChevronUp
+  ArrowLeft,
+  Plus,
+  RefreshCw,
+  User,
+  Tag,
+  DollarSign,
+  Info,
+  Scale
 } from "lucide-react";
 import {
   Select,
@@ -30,172 +33,369 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
 
-// Mock data for eco-friendly products
-const mockProducts = [
+// Mock data for peer-to-peer circular fashion listings
+const initialListings = [
   {
     id: 1,
-    name: "Organic Cotton T-Shirt",
-    description: "100% organic cotton, fair trade certified",
-    price: 29.99,
-    originalPrice: 39.99,
-    discount: 25,
-    category: "Clothing",
-    impactScore: 95,
-    image: "/placeholder-tshirt.jpg",
-    ecoBadges: ["Organic", "Fair Trade", "Carbon Neutral"],
-    rating: 4.8,
-    reviews: 124,
+    name: "Vintage Denim Jacket",
+    description: "Classic oversize denim jacket with custom hand-embroidered floral patterns on the back. Made from 100% recycled cotton.",
+    price: 45.00,
+    type: "Swap or Sell",
+    condition: "Upcycled",
+    category: "Outerwear",
+    owner: "Sarah J.",
+    avatar: "SJ",
+    ecoBadges: ["Circular", "Handmade", "Water Saved: 2,500L"],
+    rating: 4.9,
+    size: "M",
     inStock: true
   },
   {
     id: 2,
-    name: "Bamboo Toothbrush Set",
-    description: "Biodegradable bamboo with charcoal bristles",
-    price: 12.99,
-    originalPrice: 15.99,
-    discount: 19,
-    category: "Personal Care",
-    impactScore: 92,
-    image: "/placeholder-toothbrush.jpg",
-    ecoBadges: ["Biodegradable", "Plastic Free", "Vegan"],
+    name: "Recycled Polyester Fleece",
+    description: "Ultra-warm winter pullover. Minor pilling at elbows but fleece is extremely plush and clean.",
+    price: 35.00,
+    type: "Sell Only",
+    condition: "Good",
+    category: "Outerwear",
+    owner: "David K.",
+    avatar: "DK",
+    ecoBadges: ["Recycled", "Durable", "CO2 Prevented: 8kg"],
     rating: 4.6,
-    reviews: 89,
+    size: "L",
     inStock: true
   },
   {
     id: 3,
-    name: "Reusable Water Bottle",
-    description: "Stainless steel, keeps drinks cold for 24 hours",
-    price: 24.99,
-    originalPrice: 29.99,
-    discount: 17,
-    category: "Home",
-    impactScore: 88,
-    image: "/placeholder-bottle.jpg",
-    ecoBadges: ["Reusable", "BPA Free", "Durable"],
-    rating: 4.9,
-    reviews: 210,
+    name: "Zero-Waste Linen Sundress",
+    description: "Beautiful loose-fitting sundress made using a zero-waste pattern with premium organic flax linen.",
+    price: 60.00,
+    type: "Swap Only",
+    condition: "Excellent",
+    category: "Dresses",
+    owner: "Elena R.",
+    avatar: "ER",
+    ecoBadges: ["Zero Waste", "Biodegradable", "Organic"],
+    rating: 5.0,
+    size: "S",
     inStock: true
   },
   {
     id: 4,
-    name: "Solar Charger",
-    description: "Portable solar panel for charging devices",
-    price: 49.99,
-    originalPrice: 59.99,
-    discount: 17,
-    category: "Electronics",
-    impactScore: 90,
-    image: "/placeholder-charger.jpg",
-    ecoBadges: ["Renewable Energy", "Portable", "Durable"],
-    rating: 4.7,
-    reviews: 156,
-    inStock: false
-  },
-  {
-    id: 5,
-    name: "Compostable Phone Case",
-    description: "Made from plant-based materials",
-    price: 19.99,
-    originalPrice: 24.99,
-    discount: 20,
-    category: "Electronics",
-    impactScore: 85,
-    image: "/placeholder-case.jpg",
-    ecoBadges: ["Compostable", "Biodegradable", "Plant-based"],
-    rating: 4.5,
-    reviews: 92,
+    name: "Vegan Leather Chelsea Boots",
+    description: "Water-resistant vegan boots. Only worn twice, tiny scratch on left heel otherwise pristine condition.",
+    price: 85.00,
+    type: "Swap or Sell",
+    condition: "Excellent",
+    category: "Shoes",
+    owner: "Alex M.",
+    avatar: "AM",
+    ecoBadges: ["Vegan", "Circular", "PETA Approved"],
+    rating: 4.8,
+    size: "US 9",
     inStock: true
   },
   {
-    id: 6,
-    name: "Beeswax Food Wraps",
-    description: "Reusable alternative to plastic wrap",
-    price: 16.99,
-    originalPrice: 21.99,
-    discount: 23,
-    category: "Home",
-    impactScore: 87,
-    image: "/placeholder-wraps.jpg",
-    ecoBadges: ["Reusable", "Plastic Free", "Natural"],
-    rating: 4.4,
-    reviews: 78,
+    id: 5,
+    name: "Upcycled Patchwork Tote Bag",
+    description: "Sturdy daily tote crafted from denim scraps and vintage cotton lining. Fully reversible.",
+    price: 20.00,
+    type: "Swap Only",
+    condition: "Upcycled",
+    category: "Accessories",
+    owner: "Lila P.",
+    avatar: "LP",
+    ecoBadges: ["100% Upcycled", "Zero Waste", "Handmade"],
+    rating: 4.7,
+    size: "One Size",
     inStock: true
   }
 ];
 
-// Mock categories
 const categories = [
   { id: "all", name: "All Categories", icon: Package },
-  { id: "clothing", name: "Clothing", icon: Shirt },
-  { id: "home", name: "Home", icon: Home },
-  { id: "personal-care", name: "Personal Care", icon: Droplets },
-  { id: "electronics", name: "Electronics", icon: Zap },
-  { id: "kitchen", name: "Kitchen", icon: Utensils },
-  { id: "transport", name: "Transport", icon: Car }
+  { id: "outerwear", name: "Outerwear", icon: Shirt },
+  { id: "dresses", name: "Dresses", icon: Shirt },
+  { id: "shoes", name: "Shoes", icon: Shirt },
+  { id: "accessories", name: "Accessories", icon: Shirt },
+  { id: "tops", name: "Tops", icon: Shirt },
+  { id: "bottoms", name: "Bottoms", icon: Shirt }
 ];
 
 export default function EcoMarketplace() {
+  const { toast } = useToast();
+  const [listings, setListings] = useState(initialListings);
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("all");
-  const [sortBy, setSortBy] = useState("featured");
-  const [priceRange, setPriceRange] = useState<[number, number]>([0, 100]);
-  const [impactScore, setImpactScore] = useState(0);
+  const [selectedCondition, setSelectedCondition] = useState("all");
+  const [selectedType, setSelectedType] = useState("all");
   const [wishlist, setWishlist] = useState<number[]>([]);
-  const [cart, setCart] = useState<number[]>([]);
+  const [showCreateListing, setShowCreateListing] = useState(false);
+  const [showSwapModal, setShowSwapModal] = useState(false);
+  const [selectedListing, setSelectedListing] = useState<any>(null);
 
-  // Filter products based on search, category, price, and impact score
-  const filteredProducts = mockProducts.filter(product => {
-    const matchesSearch = product.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
-                          product.description.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesCategory = selectedCategory === "all" || product.category.toLowerCase() === selectedCategory;
-    const matchesPrice = product.price >= priceRange[0] && product.price <= priceRange[1];
-    const matchesImpact = product.impactScore >= impactScore;
-    return matchesSearch && matchesCategory && matchesPrice && matchesImpact;
-  });
+  // Form states for new listing
+  const [newListingName, setNewListingName] = useState("");
+  const [newListingDesc, setNewListingDesc] = useState("");
+  const [newListingPrice, setNewListingPrice] = useState("");
+  const [newListingSize, setNewListingSize] = useState("");
+  const [newListingCategory, setNewListingCategory] = useState("Tops");
+  const [newListingCondition, setNewListingCondition] = useState("Excellent");
+  const [newListingType, setNewListingType] = useState("Swap or Sell");
 
-  // Sort products
-  const sortedProducts = [...filteredProducts].sort((a, b) => {
-    if (sortBy === "price-low") return a.price - b.price;
-    if (sortBy === "price-high") return b.price - a.price;
-    if (sortBy === "rating") return b.rating - a.rating;
-    if (sortBy === "impact") return b.impactScore - a.impactScore;
-    return a.id - b.id; // Default sort by ID
-  });
+  // Form states for swap proposal
+  const [swapItemTitle, setSwapItemTitle] = useState("");
+  const [swapItemDesc, setSwapItemDesc] = useState("");
 
-  const toggleWishlist = (productId: number) => {
-    if (wishlist.includes(productId)) {
-      setWishlist(wishlist.filter(id => id !== productId));
+  const handleCreateListing = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newListingName || !newListingDesc || !newListingSize || !newListingPrice) {
+      toast({
+        title: "Missing Fields",
+        description: "Please complete all fields to submit your listing.",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    const priceNum = parseFloat(newListingPrice);
+    if (isNaN(priceNum) || priceNum < 0) {
+      toast({
+        title: "Invalid Price",
+        description: "Please enter a valid price.",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    const newListing = {
+      id: listings.length + 1,
+      name: newListingName,
+      description: newListingDesc,
+      price: priceNum,
+      type: newListingType,
+      condition: newListingCondition,
+      category: newListingCategory,
+      owner: "You (John Doe)",
+      avatar: "JD",
+      ecoBadges: ["Circular", "P2P Listed", "Zero Waste Choice"],
+      rating: 5.0,
+      size: newListingSize,
+      inStock: true
+    };
+
+    setListings([newListing, ...listings]);
+    setShowCreateListing(false);
+
+    // Reset Form
+    setNewListingName("");
+    setNewListingDesc("");
+    setNewListingPrice("");
+    setNewListingSize("");
+
+    toast({
+      title: "Listing Published!",
+      description: "Your P2P clothing item is now visible in the marketplace.",
+    });
+  };
+
+  const handleSwapProposal = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!swapItemTitle.trim()) {
+      toast({
+        title: "Describe your swap item",
+        description: "Please enter a title/description of what you're offering.",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    toast({
+      title: "Swap Request Sent!",
+      description: `Your offer to swap "${swapItemTitle}" for "${selectedListing?.name}" has been sent to ${selectedListing?.owner}.`,
+    });
+
+    setShowSwapModal(false);
+    setSwapItemTitle("");
+    setSwapItemDesc("");
+  };
+
+  const toggleWishlist = (id: number) => {
+    if (wishlist.includes(id)) {
+      setWishlist(wishlist.filter(item => item !== id));
+      toast({
+        title: "Removed from Wishlist",
+        description: "Item has been removed."
+      });
     } else {
-      setWishlist([...wishlist, productId]);
+      setWishlist([...wishlist, id]);
+      toast({
+        title: "Added to Wishlist",
+        description: "Item added to your saves."
+      });
     }
   };
 
-  const addToCart = (productId: number) => {
-    if (!cart.includes(productId)) {
-      setCart([...cart, productId]);
-    }
+  const handleBuyNow = (listing: any) => {
+    toast({
+      title: "Purchase Successful!",
+      description: `You purchased "${listing.name}" from ${listing.owner} for $${listing.price.toFixed(2)}. Details sent to email.`,
+    });
   };
+
+  const filteredListings = listings.filter(item => {
+    const matchesSearch = item.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
+                          item.description.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesCategory = selectedCategory === "all" || item.category.toLowerCase() === selectedCategory.toLowerCase();
+    const matchesCondition = selectedCondition === "all" || item.condition.toLowerCase() === selectedCondition.toLowerCase();
+    const matchesType = selectedType === "all" || 
+      (selectedType === "swap" && item.type.toLowerCase().includes("swap")) ||
+      (selectedType === "sell" && item.type.toLowerCase().includes("sell"));
+
+    return matchesSearch && matchesCategory && matchesCondition && matchesType;
+  });
 
   return (
     <Layout>
+      {/* Back to Dashboard bar */}
+      <div className="container max-w-7xl mx-auto px-4 md:px-6 pt-6">
+        <Link to="/dashboard" className="inline-flex items-center text-sm font-medium text-muted-foreground hover:text-primary transition-colors">
+          <ArrowLeft className="w-4 h-4 mr-2" />
+          Back to Dashboard
+        </Link>
+      </div>
+
       {/* Header */}
       <section className="w-full bg-gradient-to-b from-primary/5 to-background border-b border-border/40 py-8 md:py-12">
         <div className="container max-w-7xl mx-auto px-4 md:px-6">
-          <div className="space-y-4">
-            <h1 className="text-3xl md:text-4xl font-bold text-foreground flex items-center gap-3">
-              <Leaf className="w-8 h-8 text-primary" />
-              Eco Marketplace
-            </h1>
-            <p className="text-lg text-foreground/70 max-w-2xl">
-              Discover sustainable products that align with your values. Every purchase makes a positive impact.
-            </p>
+          <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
+            <div className="space-y-3">
+              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-primary/10 text-primary text-xs font-semibold">
+                <Scale className="w-3.5 h-3.5" />
+                P2P Circular Wardrobe Swap
+              </div>
+              <h1 className="text-3xl md:text-4xl font-bold text-foreground flex items-center gap-3">
+                <Leaf className="w-8 h-8 text-primary" />
+                Eco P2P Marketplace
+              </h1>
+              <p className="text-lg text-foreground/70 max-w-2xl">
+                Swap, buy, or gift pre-loved fashion directly within the community. Extend the lifecycle of clothes and eliminate waste!
+              </p>
+            </div>
+            <Dialog open={showCreateListing} onOpenChange={setShowCreateListing}>
+              <DialogTrigger asChild>
+                <Button className="flex items-center gap-2 shadow-md hover:shadow-lg transition-all">
+                  <Plus className="w-4 h-4" />
+                  List a Clothing Item
+                </Button>
+              </DialogTrigger>
+              <DialogContent className="max-w-md">
+                <DialogHeader>
+                  <DialogTitle>List Pre-loved Clothing</DialogTitle>
+                  <DialogDescription>
+                    Fill in details about the garment you wish to swap or sell to others.
+                  </DialogDescription>
+                </DialogHeader>
+                <form onSubmit={handleCreateListing} className="space-y-4 pt-2">
+                  <div className="space-y-1">
+                    <Label htmlFor="item-name">Garment Name</Label>
+                    <Input 
+                      id="item-name" 
+                      placeholder="e.g. Linen Blouse, Denim Shorts"
+                      value={newListingName}
+                      onChange={e => setNewListingName(e.target.value)}
+                    />
+                  </div>
+                  <div className="space-y-1">
+                    <Label htmlFor="item-desc">Description & Condition Details</Label>
+                    <Textarea 
+                      id="item-desc" 
+                      placeholder="Mention fabric, brand, fit, and any minor wear..."
+                      value={newListingDesc}
+                      onChange={e => setNewListingDesc(e.target.value)}
+                    />
+                  </div>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-1">
+                      <Label htmlFor="item-size">Size</Label>
+                      <Input 
+                        id="item-size" 
+                        placeholder="e.g. M, 32, S"
+                        value={newListingSize}
+                        onChange={e => setNewListingSize(e.target.value)}
+                      />
+                    </div>
+                    <div className="space-y-1">
+                      <Label htmlFor="item-price">Value / Price ($)</Label>
+                      <Input 
+                        id="item-price" 
+                        type="number"
+                        placeholder="40"
+                        value={newListingPrice}
+                        onChange={e => setNewListingPrice(e.target.value)}
+                      />
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-1">
+                      <Label htmlFor="item-category">Category</Label>
+                      <Select value={newListingCategory} onValueChange={setNewListingCategory}>
+                        <SelectTrigger id="item-category">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="Tops">Tops</SelectItem>
+                          <SelectItem value="Bottoms">Bottoms</SelectItem>
+                          <SelectItem value="Outerwear">Outerwear</SelectItem>
+                          <SelectItem value="Dresses">Dresses</SelectItem>
+                          <SelectItem value="Shoes">Shoes</SelectItem>
+                          <SelectItem value="Accessories">Accessories</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div className="space-y-1">
+                      <Label htmlFor="item-condition">Condition</Label>
+                      <Select value={newListingCondition} onValueChange={setNewListingCondition}>
+                        <SelectTrigger id="item-condition">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="Excellent">Excellent</SelectItem>
+                          <SelectItem value="Good">Good</SelectItem>
+                          <SelectItem value="Upcycled">Upcycled / Modified</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
+                  <div className="space-y-1">
+                    <Label htmlFor="item-type">Available For</Label>
+                    <Select value={newListingType} onValueChange={setNewListingType}>
+                      <SelectTrigger id="item-type">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="Swap or Sell">Swap or Sell</SelectItem>
+                        <SelectItem value="Swap Only">Swap Only</SelectItem>
+                        <SelectItem value="Sell Only">Sell Only</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <DialogFooter className="pt-4">
+                    <Button type="button" variant="outline" onClick={() => setShowCreateListing(false)}>Cancel</Button>
+                    <Button type="submit">Publish Listing</Button>
+                  </DialogFooter>
+                </form>
+              </DialogContent>
+            </Dialog>
           </div>
         </div>
       </section>
@@ -203,112 +403,77 @@ export default function EcoMarketplace() {
       {/* Main Content */}
       <main className="w-full py-8 md:py-12">
         <div className="container max-w-7xl mx-auto px-4 md:px-6">
-          <div className="flex flex-col lg:flex-row gap-6">
-            {/* Filters Sidebar */}
-            <div className="w-full lg:w-64 flex-shrink-0">
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <Filter className="w-5 h-5" />
-                    Filters
+          <div className="flex flex-col lg:flex-row gap-8">
+            
+            {/* Filters */}
+            <div className="w-full lg:w-64 flex-shrink-0 space-y-6">
+              <Card className="border border-border/40 shadow-sm">
+                <CardHeader className="pb-4">
+                  <CardTitle className="flex items-center gap-2 text-lg">
+                    <Filter className="w-5 h-5 text-primary" />
+                    Refine Search
                   </CardTitle>
                 </CardHeader>
-                <CardContent className="space-y-6">
+                <CardContent className="space-y-5">
                   {/* Search */}
                   <div className="space-y-2">
-                    <label htmlFor="marketplace-search" className="text-sm font-medium">Search</label>
+                    <Label htmlFor="search-input">Search Wardrobes</Label>
                     <div className="relative">
                       <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                       <Input
-                        id="marketplace-search"
-                        placeholder="Search products..."
+                        id="search-input"
+                        placeholder="Search items..."
                         value={searchTerm}
-                        onChange={(e) => setSearchTerm(e.target.value)}
-                        className="pl-10"
+                        onChange={e => setSearchTerm(e.target.value)}
+                        className="pl-9 text-sm"
                       />
                     </div>
                   </div>
 
                   {/* Categories */}
                   <div className="space-y-2">
-                    <label className="text-sm font-medium">Categories</label>
+                    <Label>Category</Label>
                     <Select value={selectedCategory} onValueChange={setSelectedCategory}>
                       <SelectTrigger>
-                        <SelectValue placeholder="Select category" />
+                        <SelectValue placeholder="All Categories" />
                       </SelectTrigger>
                       <SelectContent>
-                        {categories.map(category => {
-                          const IconComponent = category.icon;
-                          return (
-                            <SelectItem key={category.id} value={category.id}>
-                              <div className="flex items-center gap-2">
-                                <IconComponent className="w-4 h-4" />
-                                {category.name}
-                              </div>
-                            </SelectItem>
-                          );
-                        })}
+                        {categories.map(cat => (
+                          <SelectItem key={cat.id} value={cat.id}>
+                            {cat.name}
+                          </SelectItem>
+                        ))}
                       </SelectContent>
                     </Select>
                   </div>
 
-                  {/* Price Range */}
+                  {/* Condition Filter */}
                   <div className="space-y-2">
-                    <label htmlFor="price-range" className="text-sm font-medium">Price Range</label>
-                    <div className="space-y-2">
-                      <div className="flex justify-between text-xs text-foreground/70">
-                        <span>${priceRange[0]}</span>
-                        <span>${priceRange[1]}</span>
-                      </div>
-                      <input
-                        id="price-range"
-                        type="range"
-                        min="0"
-                        max="100"
-                        value={priceRange[1]}
-                        onChange={(e) => setPriceRange([priceRange[0], parseInt(e.target.value)])}
-                        className="w-full"
-                        aria-label="Maximum price filter"
-                      />
-                    </div>
-                  </div>
-
-                  {/* Impact Score */}
-                  <div className="space-y-2">
-                    <label htmlFor="impact-score" className="text-sm font-medium">
-                      Minimum Impact Score: {impactScore}%
-                    </label>
-                    <div className="space-y-2">
-                      <input
-                        id="impact-score"
-                        type="range"
-                        min="0"
-                        max="100"
-                        value={impactScore}
-                        onChange={(e) => setImpactScore(parseInt(e.target.value))}
-                        className="w-full"
-                        aria-label="Minimum impact score filter"
-                      />
-                      <div className="flex justify-between text-xs text-foreground/70">
-                        <span>0%</span>
-                        <span>100%</span>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Sort By */}
-                  <div className="space-y-2">
-                    <label className="text-sm font-medium">Sort By</label>
-                    <Select value={sortBy} onValueChange={setSortBy}>
+                    <Label>Condition</Label>
+                    <Select value={selectedCondition} onValueChange={setSelectedCondition}>
                       <SelectTrigger>
-                        <SelectValue placeholder="Sort by" />
+                        <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="featured">Featured</SelectItem>
-                        <SelectItem value="price-low">Price: Low to High</SelectItem>
-                        <SelectItem value="price-high">Price: High to Low</SelectItem>
-                        <SelectItem value="rating">Highest Rated</SelectItem>
-                        <SelectItem value="impact">Highest Impact</SelectItem>
+                        <SelectItem value="all">All Conditions</SelectItem>
+                        <SelectItem value="excellent">Excellent</SelectItem>
+                        <SelectItem value="good">Good</SelectItem>
+                        <SelectItem value="upcycled">Upcycled / Custom</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  {/* Swap/Sell Filter */}
+                  <div className="space-y-2">
+                    <Label>Swap/Sell Mode</Label>
+                    <Select value={selectedType} onValueChange={setSelectedType}>
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all">Any Offer Type</SelectItem>
+                        <SelectItem value="swap">Swaps Welcomed</SelectItem>
+                        <SelectItem value="sell">Direct Purchase</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
@@ -316,176 +481,152 @@ export default function EcoMarketplace() {
               </Card>
             </div>
 
-            {/* Products Grid */}
-            <div className="flex-1">
-              <div className="flex justify-between items-center mb-6">
-                <p className="text-foreground/70">
-                  Showing {sortedProducts.length} of {mockProducts.length} products
-                </p>
-                <div className="flex items-center gap-2">
-                  <span className="text-sm text-foreground/70">Sort by:</span>
-                  <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                      <Button variant="outline" size="sm" className="flex items-center gap-1">
-                        {sortBy === "featured" && "Featured"}
-                        {sortBy === "price-low" && "Price: Low to High"}
-                        {sortBy === "price-high" && "Price: High to Low"}
-                        {sortBy === "rating" && "Highest Rated"}
-                        {sortBy === "impact" && "Highest Impact"}
-                        <ChevronDown className="w-4 h-4" />
-                      </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end">
-                      <DropdownMenuItem onSelect={() => setSortBy("featured")}>
-                        Featured
-                      </DropdownMenuItem>
-                      <DropdownMenuItem onSelect={() => setSortBy("price-low")}>
-                        Price: Low to High
-                      </DropdownMenuItem>
-                      <DropdownMenuItem onSelect={() => setSortBy("price-high")}>
-                        Price: High to Low
-                      </DropdownMenuItem>
-                      <DropdownMenuItem onSelect={() => setSortBy("rating")}>
-                        Highest Rated
-                      </DropdownMenuItem>
-                      <DropdownMenuItem onSelect={() => setSortBy("impact")}>
-                        Highest Impact
-                      </DropdownMenuItem>
-                    </DropdownMenuContent>
-                  </DropdownMenu>
+            {/* List of items */}
+            <div className="flex-1 space-y-6">
+              <div className="flex justify-between items-center">
+                <h2 className="text-xl font-bold tracking-tight text-foreground">
+                  Pre-loved Wardrobes ({filteredListings.length})
+                </h2>
+                <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                  <span>P2P Trading Hub</span>
                 </div>
               </div>
 
-              {sortedProducts.length === 0 ? (
-                <div className="text-center py-12">
-                  <Package className="w-12 h-12 text-foreground/20 mx-auto mb-4" />
-                  <h3 className="text-lg font-medium text-foreground mb-2">No products found</h3>
-                  <p className="text-foreground/70 mb-4">Try adjusting your filters</p>
-                  <Button onClick={() => {
-                    setSearchTerm("");
-                    setSelectedCategory("all");
-                    setPriceRange([0, 100]);
-                    setImpactScore(0);
-                  }}>
-                    Reset Filters
-                  </Button>
-                </div>
+              {filteredListings.length === 0 ? (
+                <Card className="p-12 text-center border-dashed border-2">
+                  <div className="flex flex-col items-center justify-center space-y-3">
+                    <Package className="w-12 h-12 text-muted-foreground/50" />
+                    <h3 className="text-lg font-semibold">No pre-loved items match</h3>
+                    <p className="text-sm text-muted-foreground">Try loosening your search filters.</p>
+                    <Button variant="outline" onClick={() => {
+                      setSearchTerm("");
+                      setSelectedCategory("all");
+                      setSelectedCondition("all");
+                      setSelectedType("all");
+                    }}>
+                      Reset Filters
+                    </Button>
+                  </div>
+                </Card>
               ) : (
                 <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
-                  {sortedProducts.map((product) => (
-                    <Card key={product.id} className="flex flex-col hover:shadow-lg transition-shadow">
-                      <div className="relative">
-                        <div className="bg-muted aspect-square rounded-t-lg flex items-center justify-center">
-                          <span className="text-4xl">🛍️</span>
-                        </div>
-                        {product.discount > 0 && (
-                          <Badge className="absolute top-2 right-2 bg-destructive">
-                            {product.discount}% OFF
+                  {filteredListings.map(listing => (
+                    <Card key={listing.id} className="hover:shadow-md transition-all flex flex-col justify-between border border-border/40">
+                      <div>
+                        {/* Upper image mock */}
+                        <div className="bg-primary/5 h-48 rounded-t-lg flex items-center justify-center relative">
+                          <Shirt className="w-16 h-16 text-primary/30" />
+                          <Badge className="absolute top-3 left-3 bg-secondary text-secondary-foreground hover:bg-secondary">
+                            Condition: {listing.condition}
                           </Badge>
-                        )}
-                        <Button
-                          variant="outline"
-                          size="icon"
-                          className="absolute top-2 left-2"
-                          onClick={() => toggleWishlist(product.id)}
-                        >
-                          <Heart 
-                            className={`w-4 h-4 ${
-                              wishlist.includes(product.id) 
-                                ? "fill-primary text-primary" 
-                                : "text-foreground"
-                            }`} 
-                          />
-                        </Button>
-                      </div>
-                      
-                      <CardHeader className="pb-2">
-                        <div className="flex justify-between items-start">
-                          <CardTitle className="text-lg">{product.name}</CardTitle>
-                          <div className="text-right">
-                            <p className="font-bold text-lg">${product.price}</p>
-                            {product.originalPrice > product.price && (
-                              <p className="text-sm text-foreground/50 line-through">
-                                ${product.originalPrice}
-                              </p>
-                            )}
-                          </div>
-                        </div>
-                        <CardDescription className="line-clamp-2">
-                          {product.description}
-                        </CardDescription>
-                      </CardHeader>
-                      
-                      <CardContent className="pb-2 flex-1">
-                        <div className="flex items-center gap-1 mb-2">
-                          {[...Array(5)].map((_, i) => (
-                            <Star
-                              key={i}
-                              className={`w-4 h-4 ${
-                                i < Math.floor(product.rating)
-                                  ? "fill-yellow-500 text-yellow-500"
-                                  : "text-foreground/20"
-                              }`}
-                            />
-                          ))}
-                          <span className="text-sm text-foreground/70 ml-1">
-                            {product.rating} ({product.reviews})
-                          </span>
+                          <Badge className="absolute top-3 right-3 bg-primary text-primary-foreground">
+                            {listing.size}
+                          </Badge>
                         </div>
                         
-                        <div className="flex items-center justify-between mb-3">
-                          <div className="flex items-center gap-1">
-                            <TrendingUp className="w-4 h-4 text-primary" />
-                            <span className="text-sm font-medium">
-                              {product.impactScore}% impact score
+                        <CardHeader className="space-y-1">
+                          <div className="flex justify-between items-center">
+                            <span className="text-xs text-muted-foreground font-medium flex items-center gap-1">
+                              <User className="w-3.5 h-3.5" />
+                              {listing.owner}
+                            </span>
+                            <span className="text-lg font-bold text-foreground">
+                              ${listing.price.toFixed(2)}
                             </span>
                           </div>
-                          {!product.inStock && (
-                            <Badge variant="outline">Out of Stock</Badge>
-                          )}
-                        </div>
-                        
-                        <div className="flex flex-wrap gap-1">
-                          {product.ecoBadges.map((badge, index) => (
-                            <Badge key={index} variant="secondary" className="text-xs">
-                              {badge}
-                            </Badge>
-                          ))}
-                        </div>
-                      </CardContent>
-                      
-                      <CardFooter className="flex gap-2">
-                        <Button 
-                          variant="outline" 
-                          className="flex-1"
-                          onClick={() => toggleWishlist(product.id)}
-                        >
-                          <Heart 
-                            className={`w-4 h-4 mr-2 ${
-                              wishlist.includes(product.id) 
-                                ? "fill-primary text-primary" 
-                                : ""
-                            }`} 
-                          />
-                          Wishlist
-                        </Button>
-                        <Button 
-                          className="flex-1"
-                          disabled={!product.inStock}
-                          onClick={() => addToCart(product.id)}
-                        >
-                          <ShoppingCart className="w-4 h-4 mr-2" />
-                          Add to Cart
-                        </Button>
+                          <CardTitle className="text-lg font-semibold">{listing.name}</CardTitle>
+                          <CardDescription className="text-xs line-clamp-2">{listing.description}</CardDescription>
+                        </CardHeader>
+
+                        <CardContent className="space-y-3 pb-4">
+                          <div className="flex flex-wrap gap-1.5">
+                            {listing.ecoBadges.map((badge, index) => (
+                              <Badge key={index} variant="outline" className="text-[10px] py-0 border-primary/20 text-primary">
+                                {badge}
+                              </Badge>
+                            ))}
+                          </div>
+                          <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                            <Tag className="w-3.5 h-3.5 text-primary" />
+                            <span>Listed for: <strong className="text-foreground">{listing.type}</strong></span>
+                          </div>
+                        </CardContent>
+                      </div>
+
+                      <CardFooter className="pt-2 border-t border-border/20 flex gap-2">
+                        {listing.type !== "Sell Only" && (
+                          <Button 
+                            className="flex-1 bg-secondary text-secondary-foreground hover:bg-secondary/90 flex items-center justify-center gap-1.5"
+                            onClick={() => {
+                              setSelectedListing(listing);
+                              setShowSwapModal(true);
+                            }}
+                          >
+                            <RefreshCw className="w-3.5 h-3.5" />
+                            Swap Item
+                          </Button>
+                        )}
+                        {listing.type !== "Swap Only" && (
+                          <Button 
+                            className="flex-1 bg-primary text-primary-foreground hover:bg-primary/90"
+                            onClick={() => handleBuyNow(listing)}
+                          >
+                            Buy Pre-loved
+                          </Button>
+                        )}
                       </CardFooter>
                     </Card>
                   ))}
                 </div>
               )}
             </div>
+
           </div>
         </div>
       </main>
+
+      {/* Swap Modal */}
+      <Dialog open={showSwapModal} onOpenChange={setShowSwapModal}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <RefreshCw className="w-5 h-5 text-primary" />
+              Propose Wardrobe Swap
+            </DialogTitle>
+            <DialogDescription>
+              Propose a clothing swap with <strong>{selectedListing?.owner}</strong> for their <strong>{selectedListing?.name}</strong>.
+            </DialogDescription>
+          </DialogHeader>
+          <form onSubmit={handleSwapProposal} className="space-y-4 pt-2">
+            <div className="p-3 bg-primary/5 rounded-lg text-xs space-y-1">
+              <p className="font-semibold text-primary">Target Garment Specs:</p>
+              <p>Condition: {selectedListing?.condition} | Size: {selectedListing?.size} | Estimated Value: ${selectedListing?.price.toFixed(2)}</p>
+            </div>
+            <div className="space-y-1">
+              <Label htmlFor="swap-title">What item from your wardrobe are you offering?</Label>
+              <Input 
+                id="swap-title" 
+                placeholder="e.g. Cotton Corduroy Shirt (excellent condition)"
+                value={swapItemTitle}
+                onChange={e => setSwapItemTitle(e.target.value)}
+              />
+            </div>
+            <div className="space-y-1">
+              <Label htmlFor="swap-desc">Offer details / message (optional)</Label>
+              <Textarea 
+                id="swap-desc" 
+                placeholder="e.g. Size M, light green. Worn once, matches your jeans perfectly!"
+                value={swapItemDesc}
+                onChange={e => setSwapItemDesc(e.target.value)}
+              />
+            </div>
+            <DialogFooter className="pt-2">
+              <Button type="button" variant="outline" onClick={() => setShowSwapModal(false)}>Cancel</Button>
+              <Button type="submit">Send Swap Proposal</Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
     </Layout>
   );
 }

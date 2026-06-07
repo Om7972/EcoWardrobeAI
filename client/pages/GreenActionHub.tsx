@@ -17,7 +17,8 @@ import {
   Plus,
   Crown,
   Star,
-  CheckCircle
+  CheckCircle,
+  ArrowLeft
 } from "lucide-react";
 import {
   Select,
@@ -26,19 +27,22 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { toast } from "sonner";
+import { Link } from "react-router-dom";
 
 // Mock data for community challenges
-const mockChallenges = [
+const initialChallenges = [
   {
     id: 1,
     title: "Plant 5 trees this week",
     description: "Contribute to reforestation efforts by planting trees in your community",
     category: "Reforestation",
     participants: 124,
-    endDate: "2025-11-15",
+    endDate: "2026-11-15",
     impact: "Carbon reduction: 25kg",
     difficulty: "Easy",
-    badge: "🌱 Sapling"
+    badge: "🌱 Sapling",
+    joined: false
   },
   {
     id: 2,
@@ -46,10 +50,11 @@ const mockChallenges = [
     description: "Produce no waste for an entire week",
     category: "Waste Reduction",
     participants: 89,
-    endDate: "2025-11-10",
+    endDate: "2026-11-10",
     impact: "Waste prevented: 15kg",
     difficulty: "Hard",
-    badge: "♻️ Zero Waste Warrior"
+    badge: "♻️ Zero Waste Warrior",
+    joined: false
   },
   {
     id: 3,
@@ -57,10 +62,11 @@ const mockChallenges = [
     description: "Use bicycle instead of car for all commutes this week",
     category: "Transportation",
     participants: 210,
-    endDate: "2025-11-12",
+    endDate: "2026-11-12",
     impact: "Emissions saved: 30kg",
     difficulty: "Medium",
-    badge: "🚴 Eco Commuter"
+    badge: "🚴 Eco Commuter",
+    joined: false
   },
   {
     id: 4,
@@ -68,15 +74,16 @@ const mockChallenges = [
     description: "Shop without using any single-use plastics",
     category: "Consumption",
     participants: 156,
-    endDate: "2025-11-20",
+    endDate: "2026-11-20",
     impact: "Plastic prevented: 8kg",
     difficulty: "Medium",
-    badge: "🛍️ Plastic Free"
+    badge: "🛍️ Plastic Free",
+    joined: false
   }
 ];
 
 // Mock data for leaderboard
-const mockLeaderboard = [
+const initialLeaderboard = [
   { id: 1, name: "Alex Morgan", points: 1250, avatar: "AM", badge: "🏆 Eco Champion" },
   { id: 2, name: "Taylor Kim", points: 1120, avatar: "TK", badge: "🌱 Green Leader" },
   { id: 3, name: "Jordan Smith", points: 980, avatar: "JS", badge: "♻️ Sustainability Star" },
@@ -85,7 +92,7 @@ const mockLeaderboard = [
 ];
 
 // Mock data for user submissions
-const mockSubmissions = [
+const initialSubmissions = [
   {
     id: 1,
     userId: "user1",
@@ -95,9 +102,10 @@ const mockSubmissions = [
     description: "Planted 3 oak trees in the community park with my family",
     imageUrl: "/placeholder-tree.jpg",
     location: "Central Park, New York",
-    date: "2025-11-03",
+    date: "2026-11-03",
     likes: 24,
-    verified: true
+    verified: true,
+    hasLiked: false
   },
   {
     id: 2,
@@ -108,9 +116,10 @@ const mockSubmissions = [
     description: "Completed all my commutes by bike this week!",
     imageUrl: "/placeholder-bike.jpg",
     location: "Downtown, San Francisco",
-    date: "2025-11-02",
+    date: "2026-11-02",
     likes: 18,
-    verified: true
+    verified: true,
+    hasLiked: false
   }
 ];
 
@@ -121,8 +130,106 @@ export default function GreenActionHub() {
   const [showSubmissionForm, setShowSubmissionForm] = useState(false);
   const [selectedChallenge, setSelectedChallenge] = useState<number | null>(null);
 
+  // Dynamic state management
+  const [challenges, setChallenges] = useState(initialChallenges);
+  const [submissions, setSubmissions] = useState(initialSubmissions);
+  const [leaderboard, setLeaderboard] = useState(initialLeaderboard);
+
+  // Form states
+  const [formTitle, setFormTitle] = useState("");
+  const [formDesc, setFormDesc] = useState("");
+  const [formLocation, setFormLocation] = useState("");
+
+  const currentUserName = localStorage.getItem("userName") || "You";
+
+  const handleJoinChallenge = (id: number) => {
+    setChallenges(prev => prev.map(c => {
+      if (c.id === id) {
+        if (c.joined) {
+          toast.info(`You have already joined "${c.title}"`);
+          return c;
+        }
+        toast.success(`Successfully joined "${c.title}"! Earn points by submitting your proof.`);
+        return { ...c, participants: c.participants + 1, joined: true };
+      }
+      return c;
+    }));
+  };
+
+  const handleLikeSubmission = (id: number) => {
+    setSubmissions(prev => prev.map(s => {
+      if (s.id === id) {
+        const hasLiked = !s.hasLiked;
+        return {
+          ...s,
+          hasLiked,
+          likes: hasLiked ? s.likes + 1 : s.likes - 1
+        };
+      }
+      return s;
+    }));
+  };
+
+  const handleFormSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!selectedChallenge) {
+      toast.error("Please select a challenge first.");
+      return;
+    }
+    if (!formTitle.trim() || !formDesc.trim()) {
+      toast.error("Title and description are required.");
+      return;
+    }
+
+    const challenge = challenges.find(c => c.id === selectedChallenge);
+
+    // Create new submission
+    const newSub = {
+      id: submissions.length + 1,
+      userId: "current-user",
+      userName: currentUserName,
+      challengeId: selectedChallenge,
+      title: formTitle,
+      description: formDesc,
+      imageUrl: "",
+      location: formLocation || "Online",
+      date: new Date().toISOString().split("T")[0],
+      likes: 0,
+      verified: true,
+      hasLiked: false
+    };
+
+    setSubmissions([newSub, ...submissions]);
+
+    // Update current user points in Leaderboard
+    setLeaderboard(prev => {
+      const userExists = prev.find(u => u.name === currentUserName);
+      if (userExists) {
+        return prev.map(u => u.name === currentUserName ? { ...u, points: u.points + 150 } : u)
+          .sort((a, b) => b.points - a.points);
+      } else {
+        return [...prev, {
+          id: prev.length + 1,
+          name: currentUserName,
+          points: 150,
+          avatar: currentUserName.substring(0, 2).toUpperCase(),
+          badge: "🌿 New Eco Warrior"
+        }].sort((a, b) => b.points - a.points);
+      }
+    });
+
+    toast.success(`Awesome! Submission approved. You earned 150 points for "${challenge?.title}"`);
+    
+    // Reset form
+    setFormTitle("");
+    setFormDesc("");
+    setFormLocation("");
+    setShowSubmissionForm(false);
+    setActiveTab("submissions");
+  };
+
   // Filter challenges based on search and category
-  const filteredChallenges = mockChallenges.filter(challenge => {
+  const filteredChallenges = challenges.filter(challenge => {
     const matchesSearch = challenge.title.toLowerCase().includes(searchTerm.toLowerCase()) || 
                           challenge.description.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesCategory = categoryFilter === "all" || challenge.category === categoryFilter;
@@ -130,13 +237,19 @@ export default function GreenActionHub() {
   });
 
   // Get unique categories for filter
-  const categories = ["all", ...new Set(mockChallenges.map(challenge => challenge.category))];
+  const categories = ["all", ...new Set(challenges.map(challenge => challenge.category))];
 
   return (
     <Layout>
       {/* Header */}
       <section className="w-full bg-gradient-to-b from-primary/5 to-background border-b border-border/40 py-8 md:py-12">
         <div className="container max-w-7xl mx-auto px-4 md:px-6">
+          <div className="mb-4">
+            <Link to="/dashboard" className="inline-flex items-center text-sm font-medium text-muted-foreground hover:text-primary transition-colors">
+              <ArrowLeft className="w-4 h-4 mr-2" />
+              Back to Dashboard
+            </Link>
+          </div>
           <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
             <div className="space-y-2">
               <h1 className="text-3xl md:text-4xl font-bold text-foreground flex items-center gap-3">
@@ -148,7 +261,10 @@ export default function GreenActionHub() {
               </p>
             </div>
             <Button 
-              onClick={() => setShowSubmissionForm(true)}
+              onClick={() => {
+                setSelectedChallenge(challenges[0].id);
+                setShowSubmissionForm(true);
+              }}
               className="flex items-center gap-2"
             >
               <Plus className="w-4 h-4" />
@@ -259,13 +375,11 @@ export default function GreenActionHub() {
                       <div className="flex justify-between items-center">
                         <Badge variant="default">{challenge.badge}</Badge>
                         <Button 
-                          onClick={() => {
-                            setSelectedChallenge(challenge.id);
-                            setShowSubmissionForm(true);
-                          }}
+                          onClick={() => handleJoinChallenge(challenge.id)}
+                          variant={challenge.joined ? "secondary" : "default"}
                           size="sm"
                         >
-                          Join Challenge
+                          {challenge.joined ? "Joined ✓" : "Join Challenge"}
                         </Button>
                       </div>
                     </CardContent>
@@ -290,7 +404,7 @@ export default function GreenActionHub() {
                 </CardHeader>
                 <CardContent>
                   <div className="space-y-4">
-                    {mockLeaderboard.map((user, index) => (
+                    {leaderboard.map((user, index) => (
                       <div 
                         key={user.id} 
                         className="flex items-center justify-between p-4 rounded-lg border border-border/40 hover:bg-muted/50 transition-colors"
@@ -327,7 +441,7 @@ export default function GreenActionHub() {
           {activeTab === "submissions" && (
             <div className="space-y-6">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                {mockSubmissions.map(submission => (
+                {submissions.map(submission => (
                   <Card key={submission.id}>
                     <CardHeader>
                       <div className="flex justify-between items-start">
@@ -354,11 +468,15 @@ export default function GreenActionHub() {
                         {submission.location}
                       </div>
                       <div className="flex justify-between items-center">
-                        <Button variant="outline" size="sm">
+                        <Button 
+                          variant={submission.hasLiked ? "default" : "outline"} 
+                          size="sm"
+                          onClick={() => handleLikeSubmission(submission.id)}
+                        >
                           <Star className="w-4 h-4 mr-2" />
                           {submission.likes} likes
                         </Button>
-                        <Button variant="ghost" size="sm">
+                        <Button variant="ghost" size="sm" onClick={() => toast.info("Link copied to clipboard!")}>
                           Share
                         </Button>
                       </div>
@@ -386,7 +504,7 @@ export default function GreenActionHub() {
                   ✕
                 </Button>
               </div>
-              <div className="space-y-4">
+              <form onSubmit={handleFormSubmit} className="space-y-4">
                 <div>
                   <label className="text-sm font-medium">Challenge</label>
                   <Select 
@@ -397,7 +515,7 @@ export default function GreenActionHub() {
                       <SelectValue placeholder="Select a challenge" />
                     </SelectTrigger>
                     <SelectContent>
-                      {mockChallenges.map(challenge => (
+                      {challenges.map(challenge => (
                         <SelectItem key={challenge.id} value={challenge.id.toString()}>
                           {challenge.title}
                         </SelectItem>
@@ -407,42 +525,61 @@ export default function GreenActionHub() {
                 </div>
                 <div>
                   <label htmlFor="submission-title" className="text-sm font-medium">Title</label>
-                  <Input id="submission-title" placeholder="Give your submission a title" />
+                  <Input 
+                    id="submission-title" 
+                    placeholder="Give your submission a title" 
+                    value={formTitle}
+                    onChange={(e) => setFormTitle(e.target.value)}
+                    required
+                  />
                 </div>
                 <div>
                   <label className="text-sm font-medium">Description</label>
-                  <Textarea placeholder="Describe your experience..." rows={4} />
+                  <Textarea 
+                    placeholder="Describe your experience..." 
+                    rows={4} 
+                    value={formDesc}
+                    onChange={(e) => setFormDesc(e.target.value)}
+                    required
+                  />
                 </div>
                 <div>
                   <label htmlFor="location" className="text-sm font-medium">Location</label>
                   <div className="flex gap-2">
-                    <Input id="location" placeholder="Add location" className="flex-1" />
-                    <Button variant="outline" size="icon">
+                    <Input 
+                      id="location" 
+                      placeholder="Add location" 
+                      className="flex-1" 
+                      value={formLocation}
+                      onChange={(e) => setFormLocation(e.target.value)}
+                    />
+                    <Button type="button" variant="outline" size="icon" onClick={() => setFormLocation("New York, NY")}>
                       <MapPin className="w-4 h-4" />
                     </Button>
                   </div>
                 </div>
                 <div>
-                  <label className="text-sm font-medium">Photo</label>
+                  <label className="text-sm font-medium">Photo Proof</label>
                   <div className="border-2 border-dashed border-border rounded-lg p-6 text-center">
                     <Camera className="w-8 h-8 mx-auto text-foreground/40 mb-2" />
                     <p className="text-sm text-foreground/70">Upload a photo of your action</p>
-                    <Button variant="outline" size="sm" className="mt-2">
+                    <Button type="button" variant="outline" size="sm" className="mt-2" onClick={() => toast.info("Mock photo uploaded successfully!")}>
                       Choose File
                     </Button>
                   </div>
                 </div>
                 <div className="flex gap-3 pt-4">
                   <Button 
+                    type="button"
                     variant="outline" 
                     className="flex-1"
                     onClick={() => setShowSubmissionForm(false)}
                   >
                     Cancel
                   </Button>
-                  <Button className="flex-1">Submit</Button>
+                  <Button type="submit" className="flex-1">Submit</Button>
                 </div>
-              </div>
+              </form>
             </div>
           </div>
         </div>

@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
 import Layout from "@/components/Layout";
+import { loadRazorpayScript } from "@/lib/razorpay";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -245,11 +246,44 @@ export default function EcoMarketplace() {
     }
   };
 
-  const handleBuyNow = (listing: any) => {
-    toast({
-      title: "Purchase Successful!",
-      description: `You purchased "${listing.name}" from ${listing.owner} for $${listing.price.toFixed(2)}. Details sent to email.`,
-    });
+  const handleBuyNow = async (listing: any) => {
+    const totalAmountINR = Math.round(listing.price * 83); // Convert USD to INR
+    
+    const isLoaded = await loadRazorpayScript();
+    if (!isLoaded) {
+      toast({
+        title: "Error",
+        description: "Razorpay SDK failed to load. Please check your internet connection.",
+        variant: "destructive"
+      });
+      return;
+    }
+    
+    const options = {
+      key: import.meta.env.VITE_RAZORPAY_KEY_ID || "rzp_test_Sy3EZlSO0Xnxqc",
+      amount: totalAmountINR * 100, // paise
+      currency: import.meta.env.VITE_RAZORPAY_CURRENCY || "INR",
+      name: "Eco Pre-loved Marketplace",
+      description: `Purchase "${listing.name}" from ${listing.owner}`,
+      image: "/EcoWardrobe_png.svg",
+      handler: function (response: any) {
+        toast({
+          title: "Payment Successful!",
+          description: `You purchased "${listing.name}" from ${listing.owner} for ₹${totalAmountINR.toLocaleString()}. Payment ID: ${response.razorpay_payment_id}`,
+        });
+      },
+      prefill: {
+        name: "John Doe",
+        email: "john@gmail.com",
+        contact: "9999999999"
+      },
+      theme: {
+        color: "#10B981"
+      }
+    };
+    
+    const rzp = new (window as any).Razorpay(options);
+    rzp.open();
   };
 
   const filteredListings = listings.filter(item => {

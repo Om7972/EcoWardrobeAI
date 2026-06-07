@@ -11,10 +11,13 @@ import {
   Leaf,
   Shirt,
   Settings,
-  Upload
+  Upload,
+  Check,
+  Award
 } from "lucide-react";
+import { loadRazorpayScript } from "@/lib/razorpay";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
@@ -209,6 +212,37 @@ export default function Profile() {
     }
   };
 
+  const handleUpgrade = async (planName: string, amount: number) => {
+    const isLoaded = await loadRazorpayScript();
+    if (!isLoaded) {
+      toast.error("Razorpay SDK failed to load. Please check your internet connection.");
+      return;
+    }
+    
+    const options = {
+      key: import.meta.env.VITE_RAZORPAY_KEY_ID || "rzp_test_Sy3EZlSO0Xnxqc",
+      amount: amount * 100, // paise
+      currency: import.meta.env.VITE_RAZORPAY_CURRENCY || "INR",
+      name: "EcoWardrobe AI Membership",
+      description: `Upgrade to EcoWardrobe ${planName} Plan`,
+      image: "/EcoWardrobe_png.svg",
+      handler: function (response: any) {
+        toast.success(`Welcome to EcoWardrobe ${planName}! Payment successful. Payment ID: ${response.razorpay_payment_id}`);
+      },
+      prefill: {
+        name: profileData.name || user?.name || "John Doe",
+        email: profileData.email || user?.email || "john@gmail.com",
+        contact: profileData.phone || "9999999999"
+      },
+      theme: {
+        color: "#10B981"
+      }
+    };
+    
+    const rzp = new (window as any).Razorpay(options);
+    rzp.open();
+  };
+
   const materialOptions = [
     "Organic Cotton", "Recycled Polyester", "Hemp", "Linen", 
     "Tencel", "Bamboo", "Wool", "Silk", "Recycled Cotton"
@@ -261,7 +295,7 @@ export default function Profile() {
           </div>
 
           <Tabs defaultValue="profile" className="space-y-6">
-            <TabsList className="grid w-full grid-cols-3">
+            <TabsList className="grid w-full grid-cols-4">
               <TabsTrigger value="profile">
                 <User className="h-4 w-4 mr-2" />
                 Profile
@@ -273,6 +307,10 @@ export default function Profile() {
               <TabsTrigger value="notifications">
                 <Bell className="h-4 w-4 mr-2" />
                 Notifications
+              </TabsTrigger>
+              <TabsTrigger value="membership">
+                <Award className="h-4 w-4 mr-2" />
+                Membership
               </TabsTrigger>
             </TabsList>
 
@@ -604,6 +642,97 @@ export default function Profile() {
                   </Button>
                 </CardContent>
               </Card>
+            </TabsContent>
+
+            {/* Membership Tab */}
+            <TabsContent value="membership">
+              <div className="grid md:grid-cols-2 gap-6 animate-slide-up">
+                <Card className="border border-primary/20 relative overflow-hidden flex flex-col justify-between">
+                  <div className="absolute top-0 right-0 bg-primary text-primary-foreground text-xs px-3 py-1 rounded-bl-lg font-semibold">
+                    POPULAR
+                  </div>
+                  <div>
+                    <CardHeader>
+                      <CardTitle className="text-xl">EcoWardrobe Pro</CardTitle>
+                      <CardDescription>Advanced sustainable lifestyle features for individuals</CardDescription>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                      <div className="flex items-baseline gap-1">
+                        <span className="text-3xl font-extrabold text-foreground">₹{import.meta.env.VITE_RAZORPAY_AMOUNT_PRO || "1599"}</span>
+                        <span className="text-sm text-muted-foreground">/ year</span>
+                      </div>
+                      <ul className="space-y-2 text-sm text-foreground/80">
+                        <li className="flex items-center gap-2">
+                          <Check className="w-4 h-4 text-primary" />
+                          Unlimited AI outfit generations
+                        </li>
+                        <li className="flex items-center gap-2">
+                          <Check className="w-4 h-4 text-primary" />
+                          Deep fabric scanning & recyclability analysis
+                        </li>
+                        <li className="flex items-center gap-2">
+                          <Check className="w-4 h-4 text-primary" />
+                          Advanced styling circles & private chat channels
+                        </li>
+                        <li className="flex items-center gap-2">
+                          <Check className="w-4 h-4 text-primary" />
+                          Climate impact reports & exportable PDF certificates
+                        </li>
+                      </ul>
+                    </CardContent>
+                  </div>
+                  <CardFooter className="pt-4 border-t border-border/20 p-6">
+                    <Button 
+                      className="w-full"
+                      onClick={() => handleUpgrade("PRO", Number(import.meta.env.VITE_RAZORPAY_AMOUNT_PRO || "1599"))}
+                    >
+                      Upgrade to Pro
+                    </Button>
+                  </CardFooter>
+                </Card>
+
+                <Card className="border border-border/60 flex flex-col justify-between">
+                  <div>
+                    <CardHeader>
+                      <CardTitle className="text-xl">EcoWardrobe Team & Family</CardTitle>
+                      <CardDescription>Collaborative zero-waste matching for up to 5 profiles</CardDescription>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                      <div className="flex items-baseline gap-1">
+                        <span className="text-3xl font-extrabold text-foreground">₹{import.meta.env.VITE_RAZORPAY_AMOUNT_TEAM || "3999"}</span>
+                        <span className="text-sm text-muted-foreground">/ year</span>
+                      </div>
+                      <ul className="space-y-2 text-sm text-foreground/80">
+                        <li className="flex items-center gap-2">
+                          <Check className="w-4 h-4 text-primary" />
+                          Everything in Pro for up to 5 family members
+                        </li>
+                        <li className="flex items-center gap-2">
+                          <Check className="w-4 h-4 text-primary" />
+                          Shared sustainable family feed & closet swaps
+                        </li>
+                        <li className="flex items-center gap-2">
+                          <Check className="w-4 h-4 text-primary" />
+                          Team challenges & monthly progress goals
+                        </li>
+                        <li className="flex items-center gap-2">
+                          <Check className="w-4 h-4 text-primary" />
+                          Zero-waste matching & swap priority alerts
+                        </li>
+                      </ul>
+                    </CardContent>
+                  </div>
+                  <CardFooter className="pt-4 border-t border-border/20 p-6">
+                    <Button 
+                      variant="outline"
+                      className="w-full hover:bg-primary hover:text-primary-foreground transition-colors"
+                      onClick={() => handleUpgrade("TEAM", Number(import.meta.env.VITE_RAZORPAY_AMOUNT_TEAM || "3999"))}
+                    >
+                      Upgrade to Team & Family
+                    </Button>
+                  </CardFooter>
+                </Card>
+              </div>
             </TabsContent>
           </Tabs>
         </div>

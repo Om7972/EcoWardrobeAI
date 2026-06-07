@@ -1,6 +1,8 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
 import Layout from "@/components/Layout";
+import { loadRazorpayScript } from "@/lib/razorpay";
+import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -1373,12 +1375,41 @@ export default function EcoStore() {
             <div className="flex justify-end">
               <Button 
                 className="w-full"
-                onClick={() => {
-                  setShowCheckout(false);
-                  setCart([]);
-                  setWishlist([]);
-                  // In a real app, this would process the payment
-                  alert("Order placed successfully! Thank you for supporting sustainable commerce.");
+                onClick={async () => {
+                  const totalAmountUSD = getCartTotal() + (donateToGreenCauses ? donationAmount : 0);
+                  const totalAmountINR = Math.round(totalAmountUSD * 83); // Convert USD to INR
+                  
+                  const isLoaded = await loadRazorpayScript();
+                  if (!isLoaded) {
+                    toast.error("Razorpay SDK failed to load. Please check your internet connection.");
+                    return;
+                  }
+                  
+                  const options = {
+                    key: import.meta.env.VITE_RAZORPAY_KEY_ID || "rzp_test_Sy3EZlSO0Xnxqc",
+                    amount: totalAmountINR * 100, // paise
+                    currency: import.meta.env.VITE_RAZORPAY_CURRENCY || "INR",
+                    name: "EcoWardrobe Store",
+                    description: "Order Checkout - Eco Store",
+                    image: "/EcoWardrobe_png.svg",
+                    handler: function (response: any) {
+                      toast.success(`Payment Successful! Payment ID: ${response.razorpay_payment_id}`);
+                      setShowCheckout(false);
+                      setCart([]);
+                      setWishlist([]);
+                    },
+                    prefill: {
+                      name: "John Doe",
+                      email: "john@gmail.com",
+                      contact: "9999999999"
+                    },
+                    theme: {
+                      color: "#10B981"
+                    }
+                  };
+                  
+                  const rzp = new (window as any).Razorpay(options);
+                  rzp.open();
                 }}
               >
                 Complete Purchase
